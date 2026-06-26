@@ -11,6 +11,7 @@ import com.tomtom.sdk.routing.options.calculation.AlternativeRoutesOptions
 import com.tomtom.sdk.routing.options.calculation.AvoidOptions
 import com.tomtom.sdk.routing.options.calculation.AvoidType
 import com.tomtom.sdk.routing.options.calculation.CostModel
+import com.tomtom.sdk.routing.options.guidance.ExtendedSections
 import com.tomtom.sdk.routing.options.guidance.GuidanceOptions
 import com.tomtom.sdk.routing.route.Route
 import com.tomtom.sdk.vehicle.Vehicle
@@ -56,7 +57,8 @@ class RoutingService internal constructor(private val planner: RoutePlanner) {
                 avoidOptions = if (avoidTypes.isEmpty()) null else AvoidOptions(avoidTypes = avoidTypes),
             ),
             alternativeRoutesOptions = AlternativeRoutesOptions(maxAlternatives = preferences.maxAlternatives),
-            guidanceOptions = GuidanceOptions(),
+            // ExtendedSections.All 让路线携带车道分段 —— 车道指引（LaneGuidance）的前提
+            guidanceOptions = GuidanceOptions(extendedSections = ExtendedSections.All),
             vehicle = vehicle,
         )
         planner.planRoute(
