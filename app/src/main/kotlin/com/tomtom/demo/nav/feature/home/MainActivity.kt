@@ -41,6 +41,7 @@ import com.tomtom.sdk.map.display.route.RouteClickListener
 import com.tomtom.sdk.map.display.route.RouteOptions
 import com.tomtom.sdk.map.display.ui.MapFragment
 import com.tomtom.sdk.map.display.ui.currentlocation.CurrentLocationButton.VisibilityPolicy
+import com.tomtom.sdk.navigation.NavigationOptions
 import com.tomtom.sdk.navigation.RoutePlan
 import com.tomtom.sdk.routing.options.RoutePlanningOptions
 import com.tomtom.sdk.routing.route.Route
@@ -74,9 +75,6 @@ class MainActivity : AppCompatActivity() {
     private var routePlanningOptions: RoutePlanningOptions? = null
     private var pendingDestination: GeoPoint? = null
 
-    @Suppress("DEPRECATION")
-    private var navigationFragment: com.tomtom.sdk.navigation.ui.NavigationFragment? = null
-
     private val resultAdapter = SearchResultAdapter(
         onClick = { item ->
             binding.searchResults.isVisible = false
@@ -98,6 +96,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initSearchUi()
+        initNavigationUi()
         observeServiceMode()
         initLocation()
         ensureOnlineServices()
@@ -318,42 +317,45 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 自绘引导面板装配：结束回调 + 订阅 GuidanceBus 快照渲染面板 + 语音播报。
+     * 面板与播报都只消费 GuidanceBus（[GuidanceSnapshot] / announcements），不依赖 SDK 导航 UI 组件。
+     */
+    private fun initNavigationUi() {
+        binding.navigationView.onStop = { stopNavigation() }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                container.guidanceBus.snapshot.collect { binding.navigationView.render(it) }
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // 语音播报 TTS 域：朗读引导文本（开关在 TtsService 内判断）
+                container.guidanceBus.announcements.collect { container.navServiceFactory.tts.speak(it) }
+            }
+        }
+    }
+
     private fun startNavigation(route: Route) {
         val engine = navEngine ?: return
         val options = routePlanningOptions ?: return
-        initNavigationFragment()
-        @Suppress("DEPRECATION")
-        navigationFragment?.let { fragment ->
-            fragment.setTomTomNavigation(engine.navigation)
-            fragment.startNavigation(RoutePlan(route, options))
-            fragment.addNavigationListener(navigationListener)
-        }
-        // 引导数据分发（仪表/Widget/ISA）+ 前台 Service（后台运行，feature/guidance）
+        // 引导数据分发（仪表/Widget/ISA/自绘面板）先接通，再启动引擎
         engine.onNavigationStarted()
+        engine.navigation.start(NavigationOptions(RoutePlan(route, options)))
+        // 跟随视角 + 车标（Chevron）+ 底部留白，给引导面板让位
+        tomTomMap?.apply {
+            cameraTrackingMode = CameraTrackingMode.FollowRouteDirection
+            enableLocationMarker(LocationMarkerOptions(LocationMarkerOptions.Type.Chevron))
+            setPadding(Padding(0, 0, 0, resources.getDimensionPixelOffset(R.dimen.map_padding_bottom)))
+        }
+        // Demo 模拟行驶（实车联调删除，直接消费 GPS/融合定位）
+        useSimulationLocationProvider(route)
         // location 型前台 Service 在 API 34+ 同样要求定位权限；拒绝授权时跳过（仅失去后台保活）
         if (hasLocationPermissions()) NavigationForegroundService.start(this)
         mapFragment.currentLocationButton.visibilityPolicy = VisibilityPolicy.Invisible
         binding.searchCard.isVisible = false
+        binding.navigationView.show()
     }
-
-    @Suppress("DEPRECATION")
-    private val navigationListener =
-        object : com.tomtom.sdk.navigation.ui.NavigationFragment.NavigationListener {
-            @Deprecated("This will be removed from future releases after 2026-07-26.")
-            override fun onStarted() {
-                tomTomMap?.apply {
-                    cameraTrackingMode = CameraTrackingMode.FollowRouteDirection
-                    enableLocationMarker(LocationMarkerOptions(LocationMarkerOptions.Type.Chevron))
-                    setPadding(Padding(0, 0, 0, resources.getDimensionPixelOffset(R.dimen.map_padding_bottom)))
-                }
-                plannedRoutes.firstOrNull()?.let { useSimulationLocationProvider(it) }
-            }
-
-            @Deprecated("This will be removed from future releases after 2026-07-26.")
-            override fun onStopped() {
-                stopNavigation()
-            }
-        }
 
     /** Demo 用模拟行驶（定位 Location 域）；实车联调时删除，导航直接消费 GPS/融合定位。 */
     private fun useSimulationLocationProvider(route: Route) {
@@ -367,13 +369,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stopNavigation() {
-        @Suppress("DEPRECATION")
-        navigationFragment?.let { fragment ->
-            fragment.stopNavigation()
-            fragment.removeNavigationListener(navigationListener)
-        }
+        navEngine?.navigation?.stop()
         navEngine?.onNavigationStopped()
         NavigationForegroundService.stop(this)
+        binding.navigationView.hide()
         mapFragment.currentLocationButton.visibilityPolicy = VisibilityPolicy.InvisibleWhenRecentered
         tomTomMap?.apply {
             cameraTrackingMode = CameraTrackingMode.None
@@ -440,35 +439,13 @@ class MainActivity : AppCompatActivity() {
 
     // —— 杂项 ——
 
-    private fun initNavigationFragment() {
-        if (navigationFragment == null) {
-            @Suppress("DEPRECATION")
-            navigationFragment = com.tomtom.sdk.navigation.ui.NavigationFragment.newInstance(
-                com.tomtom.sdk.navigation.ui.NavigationUiOptions(
-                    keepInBackground = true,
-                    // 语音播报 TTS 域：开关来自设置中心
-                    isSoundEnabled = container.navServiceFactory.tts.voiceGuidanceEnabled,
-                ),
-            )
-        }
-        navigationFragment?.let {
-            if (!it.isAdded) {
-                supportFragmentManager.beginTransaction()
-                    .add(R.id.navigation_fragment_container, it)
-                    .commitNow()
-            }
-        }
-    }
-
     private fun toast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroy() {
         tomTomMap?.setLocationProvider(null)
-        navigationFragment?.let {
-            supportFragmentManager.beginTransaction().remove(it).commitNowAllowingStateLoss()
-        }
+        container.navServiceFactory.tts.shutdown()
         navEngine?.close()
         locationProvider.close()
         super.onDestroy()

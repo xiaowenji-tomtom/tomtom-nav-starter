@@ -4,4 +4,11 @@
 
     <color name="mode_online">#2C7A4B</color>
     <color name="mode_onboard">#B97A0F</color>
+
+    <!-- 自绘导航引导面板 -->
+    <color name="nav_panel">#1F2A37</color>
+    <color name="nav_panel_text">#FFFFFF</color>
+    <color name="nav_panel_sub">#B8C2CC</color>
+    <color name="nav_stop">#D32F2F</color>
+    <color name="speed_limit_text">#1F2A37</color>
 </resources>

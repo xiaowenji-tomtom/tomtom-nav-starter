@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:parentTag="androidx.constraintlayout.widget.ConstraintLayout"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 顶部转向指引卡片 -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/nav_top_card"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        app:cardBackgroundColor="@color/nav_panel"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="6dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="14dp">
+
+            <ImageView
+                android:id="@+id/nav_maneuver"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:contentDescription="@string/nav_maneuver_desc"
+                android:src="@drawable/ic_m_straight" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/nav_distance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/nav_panel_text"
+                    android:textSize="30sp"
+                    android:textStyle="bold"
+                    tools:text="300 m" />
+
+                <TextView
+                    android:id="@+id/nav_road"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/nav_panel_sub"
+                    android:textSize="16sp"
+                    tools:text="Park Street" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- 限速牌 + 当前车速 -->
+    <FrameLayout
+        android:id="@+id/nav_speed_limit_container"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_speed_limit"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/nav_top_card">
+
+        <TextView
+            android:id="@+id/nav_speed_limit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="@color/speed_limit_text"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            tools:text="40" />
+    </FrameLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/nav_current_speed_container"
+        android:layout_width="54dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:cardBackgroundColor="@color/nav_panel"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="4dp"
+        app:layout_constraintEnd_toEndOf="@id/nav_speed_limit_container"
+        app:layout_constraintStart_toStartOf="@id/nav_speed_limit_container"
+        app:layout_constraintTop_toBottomOf="@id/nav_speed_limit_container">
+
+        <TextView
+            android:id="@+id/nav_current_speed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingVertical="6dp"
+            android:textColor="@color/nav_panel_text"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            tools:text="54" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- 底部 ETA / 路程 / 结束 -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/nav_bottom_card"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        app:cardBackgroundColor="@color/nav_panel"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="18dp"
+            android:paddingVertical="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/nav_eta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/nav_panel_text"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    tools:text="15:42" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/nav_eta_label"
+                    android:textColor="@color/nav_panel_sub"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/nav_remaining_distance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/nav_panel_text"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    tools:text="4.2 km" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/nav_remaining_distance_label"
+                    android:textColor="@color/nav_panel_sub"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/nav_remaining_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/nav_panel_text"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    tools:text="8 分钟" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/nav_remaining_time_label"
+                    android:textColor="@color/nav_panel_sub"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/nav_stop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:backgroundTint="@color/nav_stop"
+                android:text="@string/nav_stop"
+                android:textColor="#FFFFFF"
+                app:cornerRadius="22dp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</merge>

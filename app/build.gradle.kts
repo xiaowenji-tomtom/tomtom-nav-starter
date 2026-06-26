@@ -38,9 +38,8 @@ dependencies {
     implementation(project(":core:sdk"))
     implementation(project(":core:data"))
 
-    // UI 层依赖（View 体系）
+    // UI 层依赖（View 体系）—— 自绘导航引导面板，不使用 com.tomtom.sdk.navigation:ui
     implementation("com.tomtom.sdk.maps:map-display-standard:$tomtomSdkVersion")
-    implementation("com.tomtom.sdk.navigation:ui:$tomtomSdkVersion")
 
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")

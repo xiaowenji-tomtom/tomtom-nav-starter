@@ -30,4 +30,15 @@
     <string name="nav_channel_name">导航</string>
     <string name="nav_running">导航进行中</string>
     <string name="widget_idle">未在导航</string>
+
+    <!-- 自绘导航引导面板 -->
+    <string name="nav_maneuver_desc">下一转向</string>
+    <string name="nav_eta_label">到达</string>
+    <string name="nav_remaining_distance_label">剩余</string>
+    <string name="nav_remaining_time_label">用时</string>
+    <string name="nav_stop">结束</string>
+    <string name="nav_stop_desc">结束导航</string>
+    <string name="nav_arrived">已到达目的地</string>
+    <string name="nav_speed_unit">km/h</string>
+    <string name="nav_dest">目的地</string>
 </resources>
