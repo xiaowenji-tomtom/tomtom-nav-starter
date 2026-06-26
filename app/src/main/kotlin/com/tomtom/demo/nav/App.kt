@@ -1,7 +1,6 @@
 package com.tomtom.demo.nav
 
 import android.app.Application
-import com.tomtom.demo.nav.core.data.AppDatabase
 import com.tomtom.demo.nav.core.data.PlacesRepository
 import com.tomtom.demo.nav.core.data.SettingsRepository
 import com.tomtom.demo.nav.core.platform.ClusterChannel
@@ -52,7 +51,7 @@ class AppContainer(app: Application) {
     val clusterChannel: ClusterChannel = LogClusterChannel()
 
     // —— 数据层 ——
-    val placesRepository = PlacesRepository(AppDatabase.get(app).savedPlaceDao())
+    val placesRepository = PlacesRepository(app, appScope)
     val settingsRepository = SettingsRepository(app)
 
     // —— 服务封装层 ——

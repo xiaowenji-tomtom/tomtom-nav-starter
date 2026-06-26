@@ -15,8 +15,8 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
-        // NavSDK 发布有 complete / extended 两个变体；complete 为标准版（免仓库凭据）
-        missingDimensionStrategy("tomtom-sdk-version", "complete")
+        // NavSDK 发布有 complete / extended 两个变体；extended 提供纯离线与 Personal Data 等扩展能力
+        missingDimensionStrategy("tomtom-sdk-version", "extended")
         ndk {
             // 8155 为 arm64-v8a；x86_64 供模拟器开发
             abiFilters += listOf("arm64-v8a", "x86_64")

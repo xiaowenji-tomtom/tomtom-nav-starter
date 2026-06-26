@@ -11,8 +11,8 @@ android {
 
     defaultConfig {
         minSdk = 26
-        // NavSDK 发布有 complete / extended 两个变体；complete 为标准版（免仓库凭据）
-        missingDimensionStrategy("tomtom-sdk-version", "complete")
+        // NavSDK 发布有 complete / extended 两个变体；extended 提供纯离线与 Personal Data 等扩展能力
+        missingDimensionStrategy("tomtom-sdk-version", "extended")
         // 开发期 Key 注入；量产时 Key 由 AMS 鉴权下发，此字段仅供 StubAmsClient 使用
         buildConfigField(
             "String",

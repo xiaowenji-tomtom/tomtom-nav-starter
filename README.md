@@ -3,6 +3,8 @@
 基于 **View/XML 体系**实现的 TomTom NavSDK 2.x 导航 Demo 起步工程（不使用 Compose），
 覆盖《应用层架构》《授权架构与运行模式》《多屏引导数据流》等核心设计，可直接作为正式工程的骨架。
 
+> 首次打开工程？先看 [架构总览 docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（含分层架构图与核心数据流，GitHub 可直接渲染）。
+
 ## 快速开始
 
 1. 在 `gradle.properties` 中填入 `tomtomApiKey`（或构建时 `-PtomtomApiKey=xxx` 传入；量产时 Key 由 AMS 鉴权下发）；
