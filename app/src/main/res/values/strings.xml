@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TomTom Nav Demo</string>
+    <string name="search_hint">搜索目的地…</string>
+    <string name="location_permission_denied">未授予定位权限，无法显示当前位置</string>
+    <string name="tap_route_to_navigate">已规划路线（含备选），点击任一路线开始模拟导航</string>
+    <string name="mode_online_first">运行模式：OnlineFirst（在线优先 · 授权有效）</string>
+    <string name="mode_onboard_only">运行模式：OnboardOnly（纯离线 · 在线服务不可用）</string>
+    <string name="onboard_only_hint">当前为 OnboardOnly 模式：在线服务不可用（离线能力待 NDS 数据灌装后接入）</string>
+    <string name="favorite_add">收藏</string>
+    <string name="favorite_added">已加入收藏</string>
+
+    <string name="warning_title">安全提示</string>
+    <string name="warning_body">驾驶时请遵守交通法规，以实际道路状况为准；导航信息仅供参考。请勿在驾驶过程中操作本设备。</string>
+    <string name="privacy_opt_in">同意共享匿名使用数据以改进服务（可随时在设置中关闭）</string>
+    <string name="warning_accept">同意并继续</string>
+
+    <string name="settings_title">设置</string>
+    <string name="settings_privacy_section">隐私</string>
+    <string name="settings_telemetry">数据共享（Telemetry 上报）</string>
+    <string name="settings_voice">播报语音（TTS 引导播报，重启导航生效）</string>
+    <string name="settings_route_section">算路偏好</string>
+    <string name="settings_avoid_tolls">避免收费道路</string>
+    <string name="settings_avoid_motorways">不走高速</string>
+    <string name="settings_ev_routing">EV 算路（使用电动车能耗模型）</string>
+    <string name="settings_data_section">数据</string>
+    <string name="settings_offline_maps">离线地图管理</string>
+    <string name="offline_maps_placeholder">离线地图：待 NDS 数据灌装与离线授权开通后可用</string>
+
+    <string name="nav_channel_name">导航</string>
+    <string name="nav_running">导航进行中</string>
+    <string name="widget_idle">未在导航</string>
+</resources>

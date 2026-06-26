@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:name=".App"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.TomTomNavDemo">
+
+        <!-- 开机警告页（免责声明 + 隐私同意），通过后进入主界面 -->
+        <activity
+            android:name=".feature.onboarding.WarningActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".feature.home.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <!-- 外部坐标发起导航入口（Send to Car / 语音助手对接点） -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="geo" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".feature.settings.SettingsActivity"
+            android:exported="false" />
+
+        <!-- 导航前台 Service：后台运行 + GuidanceBus 消费宿主 -->
+        <service
+            android:name=".feature.guidance.NavigationForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+        <!-- 桌面 Widget：导航后台运行时显示关键引导信息 -->
+        <receiver
+            android:name=".feature.widget.NavWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/nav_widget_info" />
+        </receiver>
+    </application>
+</manifest>

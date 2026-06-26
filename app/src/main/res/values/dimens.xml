@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 导航引导面板占用的底部地图留白 -->
+    <dimen name="map_padding_bottom">240dp</dimen>
+</resources>

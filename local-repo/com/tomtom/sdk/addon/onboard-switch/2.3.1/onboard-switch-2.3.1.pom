@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.tomtom.sdk.addon</groupId>
+  <artifactId>onboard-switch</artifactId>
+  <version>2.3.1</version>
+  <packaging>aar</packaging>
+  <!--
+    NavSdk 门面（TomTomSdk 的 drop-in 替代）。本地分发的 onboard-switch extended AAR。
+    传递依赖不在此 POM 声明 —— 门面所需的 TomTom SDK 模块由消费方（:core:sdk）显式声明，
+    见 core/sdk/build.gradle.kts。详情见 local-repo/README.md。
+  -->
+</project>

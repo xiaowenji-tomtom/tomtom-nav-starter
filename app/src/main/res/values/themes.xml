@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TomTomNavDemo" parent="Theme.Material3.DayNight.NoActionBar" />
+
+    <color name="mode_online">#2C7A4B</color>
+    <color name="mode_onboard">#B97A0F</color>
+</resources>
