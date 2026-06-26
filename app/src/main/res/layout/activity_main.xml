@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.fragment.app.FragmentContainerView
+    <FrameLayout
         android:id="@+id/map_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
@@ -75,5 +75,39 @@
                 android:visibility="gone" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+
+    <!-- 规划完成后出现：点此发车（取代点击地图路线启动导航） -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/drive_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="28dp"
+        android:paddingHorizontal="28dp"
+        android:text="@string/nav_start"
+        android:textSize="16sp"
+        android:visibility="gone"
+        app:cornerRadius="26dp"
+        app:icon="@drawable/ic_m_straight"
+        app:iconTint="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- 统一的自绘"回中"按钮：浏览/导航两种状态共用，样式与位置一致 -->
+    <ImageButton
+        android:id="@+id/recenter_button"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="96dp"
+        android:background="@drawable/bg_circle_panel"
+        android:contentDescription="@string/nav_recenter_desc"
+        android:elevation="6dp"
+        android:padding="12dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_recenter"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="968" viewBox="0 0 680 968" font-family="Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="ag" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#888780"/></marker>
+    <marker id="at" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#1D9E75"/></marker>
+    <marker id="ac" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#D85A30"/></marker>
+  </defs>
+  <rect x="0" y="0" width="680" height="968" fill="#FFFFFF"/>
+
+  <!-- ===== :app ===== -->
+  <rect x="20" y="20" width="640" height="180" rx="12" fill="#FBFBFA" stroke="#D3D1C7" stroke-width="0.6"/>
+  <rect x="32" y="31" width="12" height="12" rx="3" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.6"/>
+  <text x="52" y="41" font-size="13" font-weight="bold" fill="#2C2C2A">:app — UI / feature 层（View / XML）</text>
+  <rect x="32" y="50" width="616" height="22" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.6"/>
+  <text x="340" y="65" text-anchor="middle" font-size="12" fill="#185FA5">AppContainer · 手工 DI（替换为 Hilt 即可）</text>
+
+  <g font-size="13" fill="#0C447C">
+    <rect x="32" y="86" width="196" height="44" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.6"/>
+    <text x="130" y="106" text-anchor="middle">开机 / 隐私同意</text><text x="130" y="121" text-anchor="middle" font-size="10" fill="#185FA5">WarningActivity</text>
+    <rect x="242" y="86" width="196" height="44" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.6"/>
+    <text x="340" y="106" text-anchor="middle">主屏 · MainActivity</text><text x="340" y="121" text-anchor="middle" font-size="10" fill="#185FA5">地图 + 自绘导航 UI</text>
+    <rect x="452" y="86" width="196" height="44" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.6"/>
+    <text x="550" y="106" text-anchor="middle">搜索</text><text x="550" y="121" text-anchor="middle" font-size="10" fill="#185FA5">SearchViewModel</text>
+    <rect x="32" y="140" width="196" height="44" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.6"/>
+    <text x="130" y="160" text-anchor="middle">设置</text><text x="130" y="175" text-anchor="middle" font-size="10" fill="#185FA5">SettingsActivity</text>
+    <rect x="242" y="140" width="196" height="44" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.6"/>
+    <text x="340" y="160" text-anchor="middle">导航前台 Service</text><text x="340" y="175" text-anchor="middle" font-size="10" fill="#185FA5">后台保活 + 多屏分发</text>
+    <rect x="452" y="140" width="196" height="44" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.6"/>
+    <text x="550" y="160" text-anchor="middle">桌面 Widget</text><text x="550" y="175" text-anchor="middle" font-size="10" fill="#185FA5">NavWidgetProvider</text>
+  </g>
+
+  <!-- ===== :core:sdk ===== -->
+  <rect x="20" y="214" width="640" height="340" rx="12" fill="#FBFBFA" stroke="#D3D1C7" stroke-width="0.6"/>
+  <rect x="32" y="225" width="12" height="12" rx="3" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/>
+  <text x="52" y="235" font-size="13" font-weight="bold" fill="#2C2C2A">:core:sdk — 能力 + 架构核心</text>
+
+  <text x="34" y="251" font-size="10" fill="#5F5E5A">授权 &amp; 运行模式（控制脊柱）</text>
+  <g font-size="12.5" fill="#0F6E56">
+    <rect x="32" y="256" width="146" height="38" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="0.6"/>
+    <text x="105" y="274" text-anchor="middle">AmsClient</text><text x="105" y="287" text-anchor="middle" font-size="10" fill="#1D9E75">stub（待接 AMS）</text>
+    <rect x="190" y="256" width="146" height="38" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="0.6"/>
+    <text x="263" y="274" text-anchor="middle">AuthManager</text><text x="263" y="287" text-anchor="middle" font-size="10" fill="#1D9E75">鉴权 + 缓存 + 宽限</text>
+    <rect x="348" y="256" width="146" height="38" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="0.6"/>
+    <text x="421" y="274" text-anchor="middle">ModeController</text><text x="421" y="287" text-anchor="middle" font-size="10" fill="#1D9E75">授权 → 模式</text>
+    <rect x="506" y="256" width="142" height="38" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="0.6"/>
+    <text x="577" y="274" text-anchor="middle">ServiceMode</text><text x="577" y="287" text-anchor="middle" font-size="10" fill="#1D9E75">在线 / 纯离线</text>
+  </g>
+  <line x1="178" y1="275" x2="190" y2="275" stroke="#1D9E75" stroke-width="1.4" marker-end="url(#at)"/>
+  <line x1="336" y1="275" x2="348" y2="275" stroke="#1D9E75" stroke-width="1.4" marker-end="url(#at)"/>
+  <line x1="494" y1="275" x2="506" y2="275" stroke="#1D9E75" stroke-width="1.4" marker-end="url(#at)"/>
+
+  <text x="34" y="310" font-size="10" fill="#5F5E5A">统一服务入口</text>
+  <rect x="32" y="314" width="616" height="26" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/>
+  <text x="340" y="331" text-anchor="middle" font-size="13" font-weight="bold" fill="#3C3489">NavServiceFactory · 所有能力域的唯一入口</text>
+  <line x1="577" y1="294" x2="577" y2="314" stroke="#1D9E75" stroke-width="1.4" marker-end="url(#at)"/>
+  <line x1="130" y1="340" x2="130" y2="360" stroke="#888780" stroke-width="1.2" marker-end="url(#ag)"/>
+  <line x1="340" y1="340" x2="340" y2="360" stroke="#888780" stroke-width="1.2" marker-end="url(#ag)"/>
+  <line x1="550" y1="340" x2="550" y2="360" stroke="#888780" stroke-width="1.2" marker-end="url(#ag)"/>
+
+  <text x="34" y="356" font-size="10" fill="#5F5E5A">九大能力域</text>
+  <g font-size="12.5" fill="#3C3489">
+    <rect x="32" y="362" width="196" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/><text x="130" y="382" text-anchor="middle">地图显示</text>
+    <rect x="242" y="362" width="196" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/><text x="340" y="382" text-anchor="middle">定位</text>
+    <rect x="452" y="362" width="196" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/><text x="550" y="382" text-anchor="middle">搜索</text>
+    <rect x="32" y="400" width="196" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/><text x="130" y="420" text-anchor="middle">路径规划</text>
+    <rect x="242" y="400" width="196" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/><text x="340" y="420" text-anchor="middle">导航引导</text>
+    <rect x="452" y="400" width="196" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/><text x="550" y="420" text-anchor="middle">实时路况</text>
+    <rect x="32" y="438" width="196" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/><text x="130" y="458" text-anchor="middle">语音 TTS</text>
+    <rect x="242" y="438" width="196" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/><text x="340" y="458" text-anchor="middle">离线数据</text>
+    <rect x="452" y="438" width="196" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/><text x="550" y="458" text-anchor="middle">安全提醒</text>
+  </g>
+
+  <text x="34" y="488" font-size="10" fill="#5F5E5A">引导分发 &amp; 横切</text>
+  <g font-size="12" fill="#3C3489">
+    <rect x="32" y="492" width="146" height="38" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/>
+    <text x="105" y="510" text-anchor="middle">GuidanceBus</text><text x="105" y="523" text-anchor="middle" font-size="10" fill="#534AB7">统一快照分发</text>
+    <rect x="190" y="492" width="146" height="38" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/>
+    <text x="263" y="510" text-anchor="middle">ISA 转发</text><text x="263" y="523" text-anchor="middle" font-size="10" fill="#534AB7">限速 → VehicleBus</text>
+    <rect x="348" y="492" width="146" height="38" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/>
+    <text x="421" y="514" text-anchor="middle">TelemetryManager</text>
+    <rect x="506" y="492" width="142" height="38" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.6"/>
+    <text x="577" y="514" text-anchor="middle">EvProfileProvider</text>
+  </g>
+
+  <!-- ===== :core:platform ===== -->
+  <rect x="20" y="570" width="640" height="92" rx="12" fill="#FBFBFA" stroke="#D3D1C7" stroke-width="0.6"/>
+  <rect x="32" y="581" width="12" height="12" rx="3" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.6"/>
+  <text x="52" y="591" font-size="13" font-weight="bold" fill="#2C2C2A">:core:platform — 主机 / 整车集成点（待实现）</text>
+  <g font-size="12.5" fill="#633806">
+    <rect x="32" y="600" width="146" height="50" rx="6" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.6"/>
+    <text x="105" y="622" text-anchor="middle">VinProvider</text><text x="105" y="638" text-anchor="middle" font-size="10" fill="#854F0B">VIN → AMS</text>
+    <rect x="190" y="600" width="146" height="50" rx="6" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.6"/>
+    <text x="263" y="622" text-anchor="middle">车辆信号</text><text x="263" y="638" text-anchor="middle" font-size="10" fill="#854F0B">轮速 / 档位 / 俯仰</text>
+    <rect x="348" y="600" width="146" height="50" rx="6" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.6"/>
+    <text x="421" y="622" text-anchor="middle">ClusterChannel</text><text x="421" y="638" text-anchor="middle" font-size="10" fill="#854F0B">仪表 / HUD</text>
+    <rect x="506" y="600" width="142" height="50" rx="6" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.6"/>
+    <text x="577" y="622" text-anchor="middle">VehicleBus</text><text x="577" y="638" text-anchor="middle" font-size="10" fill="#854F0B">ISA → CAN</text>
+  </g>
+  <line x1="263" y1="530" x2="263" y2="599" stroke="#D85A30" stroke-width="1.4" marker-end="url(#ac)"/>
+
+  <!-- ===== :core:data ===== -->
+  <rect x="20" y="678" width="640" height="80" rx="12" fill="#FBFBFA" stroke="#D3D1C7" stroke-width="0.6"/>
+  <rect x="32" y="689" width="12" height="12" rx="3" fill="#F1EFE8" stroke="#888780" stroke-width="0.6"/>
+  <text x="52" y="699" font-size="13" font-weight="bold" fill="#2C2C2A">:core:data — 本地存储</text>
+  <g font-size="12.5" fill="#2C2C2A">
+    <rect x="32" y="708" width="302" height="44" rx="6" fill="#F1EFE8" stroke="#888780" stroke-width="0.6"/>
+    <text x="183" y="728" text-anchor="middle">PlacesRepository</text><text x="183" y="743" text-anchor="middle" font-size="10" fill="#5F5E5A">收藏 / 历史 · TomTom Personal Data</text>
+    <rect x="346" y="708" width="302" height="44" rx="6" fill="#F1EFE8" stroke="#888780" stroke-width="0.6"/>
+    <text x="497" y="728" text-anchor="middle">SettingsRepository</text><text x="497" y="743" text-anchor="middle" font-size="10" fill="#5F5E5A">偏好设置</text>
+  </g>
+
+  <!-- ===== external ===== -->
+  <rect x="20" y="774" width="640" height="150" rx="12" fill="#FBFBFA" stroke="#D3D1C7" stroke-width="0.6"/>
+  <rect x="32" y="785" width="12" height="12" rx="3" fill="#FAECE7" stroke="#D85A30" stroke-width="0.6"/>
+  <text x="52" y="795" font-size="13" font-weight="bold" fill="#2C2C2A">external — TomTom NavSDK 2.3.1（extended 变体）</text>
+  <rect x="32" y="802" width="616" height="28" rx="6" fill="#FAECE7" stroke="#D85A30" stroke-width="0.6"/>
+  <text x="340" y="820" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#712B13">NavSdk 门面 · onboard-switch AAR（TomTomSdk 的 drop-in）</text>
+  <g font-size="12.5" fill="#712B13">
+    <rect x="32" y="840" width="196" height="44" rx="6" fill="#FAECE7" stroke="#D85A30" stroke-width="0.6"/>
+    <text x="130" y="860" text-anchor="middle">TomTomSdk · 在线</text><text x="130" y="875" text-anchor="middle" font-size="10" fill="#993C1D">OnlineFirst</text>
+    <rect x="242" y="840" width="196" height="44" rx="6" fill="#FAECE7" stroke="#D85A30" stroke-width="0.6"/>
+    <text x="340" y="860" text-anchor="middle">Offline NDS 栈</text><text x="340" y="875" text-anchor="middle" font-size="10" fill="#993C1D">OnboardOnly</text>
+    <rect x="452" y="840" width="196" height="44" rx="6" fill="#FAECE7" stroke="#D85A30" stroke-width="0.6"/>
+    <text x="550" y="860" text-anchor="middle">Personal Data SDK</text><text x="550" y="875" text-anchor="middle" font-size="10" fill="#993C1D">UserProfile / 收藏历史</text>
+  </g>
+  <line x1="130" y1="830" x2="130" y2="840" stroke="#888780" stroke-width="1.2" marker-end="url(#ag)"/>
+  <line x1="340" y1="830" x2="340" y2="840" stroke="#888780" stroke-width="1.2" marker-end="url(#ag)"/>
+  <text x="340" y="906" text-anchor="middle" font-size="10" fill="#5F5E5A">init · navigation · routing · search · maps · data-store · tts · location · personal-data</text>
+
+  <!-- legend -->
+  <line x1="32" y1="950" x2="54" y2="950" stroke="#1D9E75" stroke-width="1.6" marker-end="url(#at)"/>
+  <text x="60" y="954" font-size="10" fill="#5F5E5A">控制流：鉴权 → 运行模式 → 服务工厂</text>
+  <line x1="320" y1="950" x2="342" y2="950" stroke="#D85A30" stroke-width="1.6" marker-end="url(#ac)"/>
+  <text x="348" y="954" font-size="10" fill="#5F5E5A">ISA 限速流：GuidanceBus → VehicleBus</text>
+  <text x="648" y="954" text-anchor="end" font-size="10" font-style="italic" fill="#888780">按依赖方向自上而下分层</text>
+</svg>

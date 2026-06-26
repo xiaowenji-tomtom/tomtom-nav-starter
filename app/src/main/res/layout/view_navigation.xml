@@ -60,6 +60,29 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- 车道指引（推荐车道高亮）；无数据时隐藏 -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/nav_lanes_card"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/nav_panel"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="4dp"
+        app:layout_constraintEnd_toEndOf="@id/nav_top_card"
+        app:layout_constraintStart_toStartOf="@id/nav_top_card"
+        app:layout_constraintTop_toBottomOf="@id/nav_top_card">
+
+        <LinearLayout
+            android:id="@+id/nav_lanes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp" />
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- 限速牌 + 当前车速 -->
     <FrameLayout
         android:id="@+id/nav_speed_limit_container"

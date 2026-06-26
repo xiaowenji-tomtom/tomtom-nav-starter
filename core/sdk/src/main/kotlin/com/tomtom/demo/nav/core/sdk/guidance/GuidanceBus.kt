@@ -3,11 +3,13 @@ package com.tomtom.demo.nav.core.sdk.guidance
 import com.tomtom.quantity.Distance
 import com.tomtom.sdk.location.road.SpeedLimit
 import com.tomtom.sdk.navigation.GuidanceUpdatedListener
+import com.tomtom.sdk.navigation.LaneGuidanceUpdatedListener
 import com.tomtom.sdk.navigation.LocationContextUpdatedListener
 import com.tomtom.sdk.navigation.ProgressUpdatedListener
 import com.tomtom.sdk.navigation.TomTomNavigation
 import com.tomtom.sdk.navigation.guidance.GuidanceAnnouncement
 import com.tomtom.sdk.navigation.guidance.InstructionPhase
+import com.tomtom.sdk.navigation.guidance.LaneGuidance
 import com.tomtom.sdk.navigation.guidance.instruction.ArrivalGuidanceInstruction
 import com.tomtom.sdk.navigation.guidance.instruction.DepartureGuidanceInstruction
 import com.tomtom.sdk.navigation.guidance.instruction.ExitRoundaboutGuidanceInstruction
@@ -17,6 +19,7 @@ import com.tomtom.sdk.navigation.guidance.instruction.MergeGuidanceInstruction
 import com.tomtom.sdk.navigation.guidance.instruction.RoundaboutGuidanceInstruction
 import com.tomtom.sdk.navigation.guidance.instruction.TurnGuidanceInstruction
 import com.tomtom.sdk.routing.route.instruction.common.TurnDirection
+import com.tomtom.sdk.routing.route.section.lane.Direction
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -44,6 +47,8 @@ data class GuidanceSnapshot(
     val speedLimitKmh: Double? = null,
     /** 明确不限速路段（如部分德国高速）。 */
     val speedUnlimited: Boolean = false,
+    /** 当前路口的车道指引（空=无）；推荐车道 [LaneInfo.recommended]。 */
+    val lanes: List<LaneInfo> = emptyList(),
 )
 
 /**
@@ -85,9 +90,9 @@ class GuidanceBus {
         }
 
         override fun onAnnouncementGenerated(announcement: GuidanceAnnouncement, shouldPlay: Boolean) {
-            val text = announcement.ssmlMessage.stripSsml()
-            update { copy(nextInstruction = text) }
-            if (shouldPlay && text.isNotBlank()) _announcements.tryEmit(text)
+            update { copy(nextInstruction = announcement.ssmlMessage.stripSsml()) }
+            // 语音播报端消费原始 SSML（由 SDK TTS 引擎解析）
+            if (shouldPlay) announcement.ssmlMessage.takeIf { it.isNotBlank() }?.let { _announcements.tryEmit(it) }
         }
 
         override fun onDistanceToNextInstructionChanged(
@@ -107,6 +112,22 @@ class GuidanceBus {
         }
     }
 
+    private val laneGuidanceListener = object : LaneGuidanceUpdatedListener {
+        override fun onLaneGuidanceStarted(laneGuidance: LaneGuidance) {
+            val lanes = laneGuidance.lanes.map { lane ->
+                LaneInfo(
+                    arrows = lane.directions.joinToString("") { it.toArrow() },
+                    recommended = lane.follow != null,
+                )
+            }
+            update { copy(lanes = lanes) }
+        }
+
+        override fun onLaneGuidanceEnded(laneGuidance: LaneGuidance) {
+            update { copy(lanes = emptyList()) }
+        }
+    }
+
     private val locationContextListener = LocationContextUpdatedListener { context ->
         val limit = context.speedLimit
         update {
@@ -123,6 +144,7 @@ class GuidanceBus {
         this.navigation = navigation
         navigation.addProgressUpdatedListener(progressListener)
         navigation.addGuidanceUpdatedListener(guidanceListener)
+        navigation.addLaneGuidanceUpdatedListener(laneGuidanceListener)
         navigation.addLocationContextUpdatedListener(locationContextListener)
         update { copy(navigating = true) }
     }
@@ -131,6 +153,7 @@ class GuidanceBus {
         navigation?.let {
             it.removeProgressUpdatedListener(progressListener)
             it.removeGuidanceUpdatedListener(guidanceListener)
+            it.removeLaneGuidanceUpdatedListener(laneGuidanceListener)
             it.removeLocationContextUpdatedListener(locationContextListener)
         }
         navigation = null
@@ -162,5 +185,18 @@ class GuidanceBus {
             else -> Maneuver.STRAIGHT
         }
         else -> Maneuver.STRAIGHT
+    }
+
+    private fun Direction.toArrow(): String = when (this) {
+        Direction.STRAIGHT -> "↑"
+        Direction.SLIGHT_RIGHT -> "↗"
+        Direction.RIGHT -> "↱"
+        Direction.SHARP_RIGHT -> "↘"
+        Direction.RIGHT_U_TURN -> "↷"
+        Direction.SLIGHT_LEFT -> "↖"
+        Direction.LEFT -> "↰"
+        Direction.SHARP_LEFT -> "↙"
+        Direction.LEFT_U_TURN -> "↶"
+        else -> "↑"
     }
 }

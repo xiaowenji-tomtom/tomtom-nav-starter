@@ -3,7 +3,8 @@
     <string name="app_name">TomTom Nav Demo</string>
     <string name="search_hint">搜索目的地…</string>
     <string name="location_permission_denied">未授予定位权限，无法显示当前位置</string>
-    <string name="tap_route_to_navigate">已规划路线（含备选），点击任一路线开始模拟导航</string>
+    <string name="tap_route_to_navigate">已规划路线，点击"开始导航"发车</string>
+    <string name="nav_start">开始导航</string>
     <string name="mode_online_first">运行模式：OnlineFirst（在线优先 · 授权有效）</string>
     <string name="mode_onboard_only">运行模式：OnboardOnly（纯离线 · 在线服务不可用）</string>
     <string name="onboard_only_hint">当前为 OnboardOnly 模式：在线服务不可用（离线能力待 NDS 数据灌装后接入）</string>
@@ -38,6 +39,7 @@
     <string name="nav_remaining_time_label">用时</string>
     <string name="nav_stop">结束</string>
     <string name="nav_stop_desc">结束导航</string>
+    <string name="nav_recenter_desc">回到跟随视角</string>
     <string name="nav_arrived">已到达目的地</string>
     <string name="nav_speed_unit">km/h</string>
     <string name="nav_dest">目的地</string>

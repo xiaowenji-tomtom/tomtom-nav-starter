@@ -48,6 +48,8 @@ dependencies {
     api("com.tomtom.sdk.location:provider-map-matched:$tomtomSdkVersion")
     api("com.tomtom.sdk.location:provider-simulation:$tomtomSdkVersion")
     api("com.tomtom.sdk.navigation:navigation:$tomtomSdkVersion")
+    // 引导语音播报引擎（自绘导航 UI 的语音，取代 NavigationFragment 内置 TTS）
+    api("com.tomtom.sdk:tts:$tomtomSdkVersion")
     api("com.tomtom.sdk.routing:route-planner:$tomtomSdkVersion")
     api("com.tomtom.sdk.search:search:$tomtomSdkVersion")
     // NavSdk 门面在线分支签名引用 ReverseGeocoder —— 本地 AAR 不带传递依赖，需显式声明

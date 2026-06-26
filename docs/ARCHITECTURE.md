@@ -7,6 +7,14 @@
 一律经 `NavServiceFactory` 获取能力服务；授权状态变化时由 `ServiceModeController` 切换运行模式，
 调用方重建服务，业务代码零感知。**
 
+## 分层架构图
+
+![分层架构图](architecture.svg)
+
+> 绿色箭头＝控制流（鉴权 → 运行模式 → 服务工厂）；珊瑚色箭头＝ISA 限速流。
+> 依赖方向：`:app → :core:sdk → {:core:platform, :core:data, external}`；
+> `:core:sdk` 以 `api(...)` 把 SDK 与 `:core:platform` 暴露给上层，`:core:data` 直接依赖 Personal Data 模块。
+
 ## 模块结构
 
 | 模块 | 角色 | 关键内容 |
@@ -21,108 +29,13 @@
 > 因为纯离线（NavSdk OnboardOnly）与 Personal Data API 均为 `@RestrictToExtendedFlavor`。
 > extended 制品需鉴权访问 TomTom Artifactory（complete 变体则公开可取）。
 
-## 分层架构图
-
-```mermaid
-flowchart TB
-  subgraph APP[":app — UI / feature 层 · View/XML"]
-    DI["AppContainer · 手工 DI"]:::app
-    ONB["Onboarding · WarningActivity"]:::app
-    HOME["Home · MainActivity"]:::app
-    SRCH["Search · SearchViewModel"]:::app
-    SET["Settings"]:::app
-    GSVC["Guidance 前台 Service"]:::app
-    WID["Home Widget"]:::app
-  end
-
-  subgraph SDK[":core:sdk — 能力 + 架构核心"]
-    subgraph SPINE["授权 & 运行模式"]
-      AMS["AmsClient · stub"]:::spine
-      AM["AuthManager"]:::spine
-      SMC["ServiceModeController"]:::spine
-      SM["ServiceMode<br/>ONLINE_FIRST / ONBOARD_ONLY"]:::spine
-    end
-    FAC["NavServiceFactory · 统一服务入口"]:::sdk
-    subgraph DOM["九大能力域"]
-      MAP["Map display"]:::sdk
-      LOC["Location"]:::sdk
-      SES["Search"]:::sdk
-      RO["Routing"]:::sdk
-      NAV["Navigation"]:::sdk
-      TR["Traffic"]:::sdk
-      TTS["TTS"]:::sdk
-      MD["Map data"]:::sdk
-      SAF["Safety"]:::sdk
-    end
-    GB["GuidanceBus"]:::sdk
-    ISAF["IsaSpeedLimitForwarder"]:::sdk
-    TM["TelemetryManager"]:::sdk
-    EVP["EvProfileProvider"]:::sdk
-  end
-
-  subgraph PLAT[":core:platform — 主机集成 · 待实现"]
-    VIN["VinProvider"]:::plat
-    VB["VehicleBus · ISA→CAN"]:::plat
-    VS["VehicleSignalSource"]:::plat
-    CC["ClusterChannel · 仪表/HUD"]:::plat
-  end
-
-  subgraph DATA[":core:data — 本地存储"]
-    PR["PlacesRepository"]:::data
-    SR["SettingsRepository"]:::data
-  end
-
-  subgraph EXT["external — TomTom NavSDK 2.3.1 · extended"]
-    FACADE["NavSdk 门面 · onboard-switch AAR"]:::ext
-    ONLINE["TomTomSdk · online"]:::ext
-    OFFLINE["Offline NDS stack"]:::ext
-    PD["Personal Data SDK<br/>UserProfile / UserLocations"]:::ext
-  end
-
-  HOME -->|"经工厂取服务"| FAC
-  SRCH --> FAC
-  SRCH --> PR
-  VIN -->|"VIN / 车型"| AM
-  AMS --> AM --> SMC --> SM
-  SM -->|"驱动模式"| FAC
-  FAC -.->|"创建"| DOM
-  NAV -->|"NavSdk.navigation"| FACADE
-  FACADE --> ONLINE
-  FACADE -.-> OFFLINE
-  PR -->|"离线 UserProfile"| PD
-  NAV -->|"引导监听"| GB
-  GB --> ISAF -->|"限速"| VB
-  GB --> GSVC
-  GB --> WID
-  GB --> CC
-
-  classDef app fill:#E6F1FB,stroke:#378ADD,color:#0C447C;
-  classDef sdk fill:#EEEDFE,stroke:#7F77DD,color:#3C3489;
-  classDef spine fill:#E1F5EE,stroke:#1D9E75,color:#0F6E56;
-  classDef plat fill:#FAEEDA,stroke:#EF9F27,color:#633806;
-  classDef data fill:#F1EFE8,stroke:#888780,color:#2C2C2A;
-  classDef ext fill:#FAECE7,stroke:#D85A30,color:#712B13;
-```
-
-依赖方向：`:app → :core:sdk → {:core:platform, :core:data, external}`；
-`:core:sdk` 以 `api(...)` 把 SDK 与 `:core:platform` 暴露给上层，`:core:data` 直接依赖 Personal Data 模块。
-
 ## 核心数据流
 
 ### ① 授权驱动运行模式（控制平面）
 
-开机即异步鉴权，授权状态唯一决定运行模式；UI 订阅模式做"模式驱动重建"。
-
-```mermaid
-flowchart LR
-  BOOT["App 启动"] --> R["AuthManager.refresh(VIN)"]
-  R --> V{"AMS 鉴权"}
-  V -->|"有效 / 宽限期内"| ON["ServiceMode = ONLINE_FIRST"]
-  V -->|"无效 / 超时且无缓存"| OFF["ServiceMode = ONBOARD_ONLY"]
-  ON --> F["NavServiceFactory 创建在线服务"]
-  OFF --> F2["抛 OnboardDataNotProvisioned<br/>(NDS 未灌装)"]
-  ON --> UI["MainActivity 订阅模式 → 重建服务"]
-```
+开机即异步鉴权（VIN 来自平台层），授权状态唯一决定运行模式；UI 订阅模式做"模式驱动重建"：
+有效 / 宽限期内 → `ONLINE_FIRST`（创建在线服务）；无效 / 超时且无缓存 → `ONBOARD_ONLY`
+（当前 Demo 抛 `OnboardDataNotProvisioned`，待 NDS 数据灌装）。
 
 入口：[`AuthManager`](../core/sdk/src/main/kotlin/com/tomtom/demo/nav/core/sdk/auth/AuthManager.kt) ·
 [`ServiceModeController`](../core/sdk/src/main/kotlin/com/tomtom/demo/nav/core/sdk/ServiceModeController.kt) ·
@@ -138,18 +51,9 @@ flowchart LR
 
 ### ③ 多屏引导分发（数据平面）
 
-导航引擎只被 `GuidanceBus` 订阅一次，广播统一 `GuidanceSnapshot` 给所有消费端；
-消费端只依赖快照，不触达 SDK 类型。
-
-```mermaid
-flowchart LR
-  NAVE["TomTomNavigation<br/>(经 NavSdk)"] --> GB["GuidanceBus<br/>统一 GuidanceSnapshot"]
-  GB --> NOTI["前台 Service 通知"]
-  GB --> WID["Home Widget"]
-  GB --> CC["ClusterChannel · 仪表 / HUD"]
-  GB --> ISAF["IsaSpeedLimitForwarder"]
-  ISAF --> VB["VehicleBus → CAN → 整车 ISA"]
-```
+导航引擎只被 `GuidanceBus` 订阅一次，广播统一 `GuidanceSnapshot` 给所有消费端
+（自绘导航面板、语音播报、前台 Service 通知、桌面 Widget、仪表 `ClusterChannel`、
+`IsaSpeedLimitForwarder → VehicleBus → CAN → 整车 ISA`）。消费端只依赖快照，不触达 SDK 类型。
 
 入口：[`GuidanceBus`](../core/sdk/src/main/kotlin/com/tomtom/demo/nav/core/sdk/guidance/GuidanceBus.kt) ·
 [`IsaSpeedLimitForwarder`](../core/sdk/src/main/kotlin/com/tomtom/demo/nav/core/sdk/guidance/IsaSpeedLimitForwarder.kt)。
@@ -168,3 +72,4 @@ flowchart LR
 - **单一模式开关**：`ServiceMode` 是全应用唯一的在线/离线开关，由授权状态推导。
 - **平台适配层隔离**：所有主机 / 整车耦合点收敛在 `:core:platform` 的接口里（WS5 替换为真实实现）。
 - **引导数据契约**：多屏消费端只依赖 `GuidanceSnapshot`，通道实现可独立演进。
+- **后台保活**：导航期间由 `NavigationForegroundService`（`foregroundServiceType=location`）保活进程并持续后台定位 / ISA 转发 —— 取代了 SDK `NavigationFragment(keepInBackground=true)` 内部的 `TomTomNavigationService`（自绘 UI 后该机制不再可用）。

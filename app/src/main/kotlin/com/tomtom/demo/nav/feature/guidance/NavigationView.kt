@@ -1,13 +1,17 @@
 package com.tomtom.demo.nav.feature.guidance
 
 import android.content.Context
+import android.graphics.Color
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.LayoutInflater
+import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import com.tomtom.demo.nav.R
 import com.tomtom.demo.nav.databinding.ViewNavigationBinding
 import com.tomtom.demo.nav.core.sdk.guidance.GuidanceSnapshot
+import com.tomtom.demo.nav.core.sdk.guidance.LaneInfo
 import com.tomtom.demo.nav.core.sdk.guidance.Maneuver
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -64,10 +68,29 @@ class NavigationView @JvmOverloads constructor(
         binding.navCurrentSpeedContainer.isVisible = snapshot.speedKmh != null
         snapshot.speedKmh?.let { binding.navCurrentSpeed.text = it.roundToInt().toString() }
 
+        // 车道指引
+        renderLanes(snapshot.lanes)
+
         // 底部信息
         binding.navEta.text = formatEta(snapshot.remainingTimeSeconds)
         binding.navRemainingDistance.text = formatDistance(snapshot.remainingDistanceMeters)
         binding.navRemainingTime.text = formatDuration(snapshot.remainingTimeSeconds)
+    }
+
+    private fun renderLanes(lanes: List<LaneInfo>) {
+        binding.navLanesCard.isVisible = lanes.isNotEmpty()
+        binding.navLanes.removeAllViews()
+        if (lanes.isEmpty()) return
+        lanes.forEach { lane ->
+            val cell = TextView(context).apply {
+                text = lane.arrows
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+                // 推荐车道高亮（白），其余暗显
+                setTextColor(if (lane.recommended) Color.WHITE else NON_RECOMMENDED_COLOR)
+                setPadding(LANE_PADDING_PX, 0, LANE_PADDING_PX, 0)
+            }
+            binding.navLanes.addView(cell)
+        }
     }
 
     private fun formatDistance(meters: Double?): String {
@@ -96,6 +119,9 @@ class NavigationView @JvmOverloads constructor(
     }
 
     private companion object {
+        val NON_RECOMMENDED_COLOR = Color.parseColor("#5F6B78")
+        const val LANE_PADDING_PX = 6
+
         /** maneuver → (drawable, 是否水平镜像)。左转类复用右转图标并镜像，减少资源数。 */
         fun iconFor(maneuver: Maneuver): Pair<Int, Boolean> = when (maneuver) {
             Maneuver.DEPART, Maneuver.STRAIGHT, Maneuver.UNKNOWN -> R.drawable.ic_m_straight to false
