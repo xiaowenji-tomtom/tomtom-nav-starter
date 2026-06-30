@@ -42,8 +42,9 @@ dependencies {
     implementation(project(":core:sdk"))
     implementation(project(":core:data"))
 
-    // 地图显示仍是命令式 MapView（经 AndroidView 内嵌到 Compose）——不使用声明式 compose 地图，保持架构不变
-    implementation("com.tomtom.sdk.maps:map-display-standard:$tomtomSdkVersion")
+    // 声明式 Compose 地图 + 路线/导航可视化（com.tomtom.sdk.map.display.compose.TomTomMap）
+    implementation("com.tomtom.sdk.maps:map-display-compose-standard:$tomtomSdkVersion")
+    implementation("com.tomtom.sdk.maps.visualization:visualization-compose:$tomtomSdkVersion")
 
     // —— UI 层（Compose 体系）——
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")

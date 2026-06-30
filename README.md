@@ -1,7 +1,7 @@
 # TomTom Nav Demo Starter（Jetpack Compose · TomTom NavSDK 2.x）
 
 基于 **Jetpack Compose** 实现 UI 层的 TomTom NavSDK 2.x 导航 Demo 起步工程
-（地图仍为命令式 `MapView`，经 `AndroidView` 内嵌——SDK 调用方式与官方教程一致），
+（地图为 TomTom 声明式 Compose 地图 `TomTomMap`，路线/导航经 `NavigationVisualization` 声明式绘制），
 覆盖《应用层架构》《授权架构与运行模式》《多屏引导数据流》等核心设计，可直接作为正式工程的骨架。
 
 > 首次打开工程？先看 [架构总览 docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（含分层架构图与核心数据流，GitHub 可直接渲染）。
@@ -85,7 +85,7 @@ logcat 可观测的多屏/ISA 数据流：
 
 ## 说明
 
-- 官方示例 App 用声明式 Compose 地图；本工程 UI 同为 **Jetpack Compose**，但地图保留命令式 `MapView`（经 `AndroidView` 内嵌），并在其上补齐授权/模式/多屏架构，SDK 调用方式与官方教程一致。
+- 官方示例 App 用声明式 Compose 地图；本工程 UI 同为 **Jetpack Compose**，地图同为声明式 `TomTomMap`，并在其上补齐授权/模式/多屏架构，SDK 调用方式与官方教程一致。
 - NavSDK 发布为 complete / extended 双变体：本工程使用 `extended`（纯离线 / Personal Data 等扩展能力；制品需鉴权访问 TomTom Artifactory，见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)）。
 - 不使用 SDK `NavigationFragment`：导航 UI 为自绘 Compose 面板（[`NavigationOverlay`](app/src/main/kotlin/com/tomtom/demo/nav/feature/guidance/NavigationOverlay.kt)），只消费 `GuidanceBus` 快照，便于多屏/仪表复用。
 - 文档入口：<https://docs.tomtom.com/navigation/android/introduction/introduction>

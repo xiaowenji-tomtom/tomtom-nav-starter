@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 导航引导面板占用的底部地图留白 -->
-    <dimen name="map_padding_bottom">240dp</dimen>
+    <!-- 导航引导面板底部留白现由 Compose 常量管理（MainScreen.NAV_BOTTOM_SAFE_AREA）；此文件保留以备后用 -->
 </resources>

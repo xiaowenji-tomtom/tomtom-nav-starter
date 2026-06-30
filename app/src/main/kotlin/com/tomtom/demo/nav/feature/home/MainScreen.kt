@@ -4,9 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -16,10 +19,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +33,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tomtom.demo.nav.R
 import com.tomtom.demo.nav.core.sdk.ServiceMode
@@ -37,21 +41,36 @@ import com.tomtom.demo.nav.feature.guidance.NavigationOverlay
 import com.tomtom.demo.nav.feature.search.SearchPanel
 import com.tomtom.demo.nav.feature.search.SearchViewModel
 import com.tomtom.demo.nav.ui.theme.NavColors
-import com.tomtom.sdk.map.display.ui.MapView
+import com.tomtom.sdk.location.GeoPoint
+import com.tomtom.sdk.map.display.camera.CameraOptions
+import com.tomtom.sdk.map.display.camera.CameraTrackingMode
+import com.tomtom.sdk.map.display.camera.InitialCameraOptions
+import com.tomtom.sdk.map.display.compose.TomTomMap
+import com.tomtom.sdk.map.display.compose.model.MapDisplayInfrastructure
+import com.tomtom.sdk.map.display.compose.nodes.CurrentLocationMarker
+import com.tomtom.sdk.map.display.compose.properties.CurrentLocationMarkerProperties
+import com.tomtom.sdk.map.display.compose.state.rememberMapViewState
+import com.tomtom.sdk.map.display.location.LocationMarkerOptions
+import com.tomtom.sdk.map.display.visualization.navigation.compose.NavigationVisualization
+import com.tomtom.sdk.map.display.visualization.navigation.compose.model.NavigationVisualizationInfrastructure
 import kotlinx.coroutines.flow.StateFlow
 
 private typealias SearchItem = SearchViewModel.SearchItem
 
 /**
- * ［feature:home］导航主屏（Compose）：地图宿主 + 浏览态搜索/设置 chrome + 导航态自绘引导面板。
+ * ［feature:home］导航主屏（Compose）：声明式 TomTomMap + 浏览态搜索/设置 chrome + 导航态自绘引导面板。
  *
- * 架构未变：地图仍是命令式 [MapView]（经 AndroidView 内嵌），其生命周期由宿主 Activity 转发；
- * 算路 / 引导 / 定位编排仍在 MainActivity，本组件只负责渲染与回调。状态来源：
- * 运行模式、引导快照、搜索结果均为 [StateFlow]，经 collectAsStateWithLifecycle 订阅。
+ * 地图为 TomTom 声明式 Compose 地图：路线预览由 [navVizInfra] 的路由可视化数据源驱动绘制，主动导航的
+ * 车标/主动路线由导航可视化数据源驱动；相机经 [cameraTrackingMode] / [cameraTarget] 状态驱动。
+ * 基础设施（[mapInfra]）需 SDK 就绪才非空，就绪前显示加载态。算路/引导编排在 MainActivity。
  */
 @Composable
 fun MainScreen(
-    mapView: MapView,
+    mapInfra: MapDisplayInfrastructure?,
+    navVizInfra: NavigationVisualizationInfrastructure?,
+    initialCenter: GeoPoint,
+    cameraTrackingMode: CameraTrackingMode,
+    cameraTarget: CameraOptions?,
     serviceModeFlow: StateFlow<ServiceMode>,
     snapshotFlow: StateFlow<GuidanceSnapshot>,
     resultsFlow: StateFlow<List<SearchItem>>,
@@ -67,10 +86,28 @@ fun MainScreen(
     onRecenter: () -> Unit,
     onStopNav: () -> Unit,
     onOpenSettings: () -> Unit,
+    onMapPanning: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        // 命令式地图（不改架构）：同一 MapView 实例由 Activity 创建并转发生命周期
-        AndroidView(factory = { mapView }, modifier = Modifier.matchParentSize())
+        if (mapInfra != null && navVizInfra != null) {
+            MapHost(
+                mapInfra = mapInfra,
+                navVizInfra = navVizInfra,
+                initialCenter = initialCenter,
+                cameraTrackingMode = cameraTrackingMode,
+                cameraTarget = cameraTarget,
+                isNavigating = isNavigating,
+                onMapPanning = onMapPanning,
+            )
+        } else {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(12.dp))
+                    Text(text = stringResource(R.string.map_initializing))
+                }
+            }
+        }
 
         if (isNavigating) {
             val snapshot by snapshotFlow.collectAsStateWithLifecycle()
@@ -167,6 +204,40 @@ fun MainScreen(
 }
 
 @Composable
+private fun MapHost(
+    mapInfra: MapDisplayInfrastructure,
+    navVizInfra: NavigationVisualizationInfrastructure,
+    initialCenter: GeoPoint,
+    cameraTrackingMode: CameraTrackingMode,
+    cameraTarget: CameraOptions?,
+    isNavigating: Boolean,
+    onMapPanning: () -> Unit,
+) {
+    val mapViewState = rememberMapViewState(
+        initialCameraOptions = InitialCameraOptions.LocationBased(position = initialCenter, zoom = INITIAL_ZOOM),
+    )
+
+    // 导航态给底部引导面板留白，避免车标被遮挡（等价于命令式 map.setPadding）
+    mapViewState.safeArea = PaddingValues(bottom = if (isNavigating) NAV_BOTTOM_SAFE_AREA.dp else 0.dp)
+
+    LaunchedEffect(cameraTrackingMode) { mapViewState.cameraState.trackingMode = cameraTrackingMode }
+    LaunchedEffect(cameraTarget) { cameraTarget?.let { mapViewState.cameraState.animateCamera(it) } }
+
+    TomTomMap(
+        modifier = Modifier.fillMaxSize(),
+        infrastructure = mapInfra,
+        state = mapViewState,
+        onMapPanningListener = { onMapPanning() },
+    ) {
+        CurrentLocationMarker(
+            CurrentLocationMarkerProperties { type = LocationMarkerOptions.Type.Chevron },
+        )
+        // 预览路线（路由数据源）+ 主动导航（导航数据源）统一由此渲染
+        NavigationVisualization(infrastructure = navVizInfra) { }
+    }
+}
+
+@Composable
 private fun ModeBanner(mode: ServiceMode) {
     val (color, textRes) = when (mode) {
         ServiceMode.ONLINE_FIRST -> NavColors.ModeOnline to R.string.mode_online_first
@@ -179,3 +250,6 @@ private fun ModeBanner(mode: ServiceMode) {
         Text(text = stringResource(textRes), color = Color.White, fontSize = 13.sp)
     }
 }
+
+private const val INITIAL_ZOOM = 14.0
+private const val NAV_BOTTOM_SAFE_AREA = 220

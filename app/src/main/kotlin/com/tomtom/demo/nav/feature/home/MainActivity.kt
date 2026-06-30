@@ -3,7 +3,6 @@ package com.tomtom.demo.nav.feature.home
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -15,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
-import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -29,33 +27,38 @@ import com.tomtom.demo.nav.core.sdk.navigation.NavigationEngine
 import com.tomtom.demo.nav.core.sdk.routing.RoutePreferences
 import com.tomtom.demo.nav.core.sdk.routing.RoutingService
 import com.tomtom.demo.nav.ui.theme.TomTomNavDemoTheme
+import com.tomtom.sdk.addon.onboard.NavSdk
+import com.tomtom.sdk.init.TomTomSdk
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.LocationProvider
 import com.tomtom.sdk.location.OnLocationUpdateListener
-import com.tomtom.sdk.map.display.TomTomMap
+import com.tomtom.sdk.map.display.MapLocationInfrastructure
 import com.tomtom.sdk.map.display.camera.CameraOptions
 import com.tomtom.sdk.map.display.camera.CameraTrackingMode
-import com.tomtom.sdk.map.display.common.screen.Padding
-import com.tomtom.sdk.map.display.gesture.MapPanningListener
-import com.tomtom.sdk.map.display.ui.compass.CompassButton
-import com.tomtom.sdk.map.display.location.LocationMarkerOptions
-import com.tomtom.sdk.map.display.route.Instruction
-import com.tomtom.sdk.map.display.route.RouteOptions
-import com.tomtom.sdk.map.display.ui.MapView
-import com.tomtom.sdk.map.display.ui.currentlocation.CurrentLocationButton.VisibilityPolicy
+import com.tomtom.sdk.map.display.compose.model.MapDisplayInfrastructure
+import com.tomtom.sdk.map.display.visualization.navigation.NavigationVisualizationDataProvider
+import com.tomtom.sdk.map.display.visualization.navigation.compose.model.NavigationVisualizationInfrastructure
+import com.tomtom.sdk.map.display.visualization.routing.RoutingVisualizationDataProvider
 import com.tomtom.sdk.navigation.NavigationOptions
 import com.tomtom.sdk.navigation.RoutePlan
 import com.tomtom.sdk.routing.options.RoutePlanningOptions
 import com.tomtom.sdk.routing.route.Route
+import com.tomtom.sdk.routing.route.RouteId
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
- * ［feature:home］导航主屏：地图宿主 + 路线展示 + 引导宿主。
+ * ［feature:home］导航主屏：声明式 Compose 地图宿主 + 路线展示 + 引导宿主。
  *
- * UI 体系为 Compose（见 [MainScreen]），但架构未变：地图仍是命令式 [MapView]（其生命周期由本
- * Activity 转发），算路 / 引导 / 定位编排全部留在此处，经 NavServiceFactory 装配；Compose 仅渲染
- * 状态并回调。各能力域代码位置见 :core:sdk NavServiceFactory 注释表。
+ * 地图为 TomTom 声明式 Compose 地图（[com.tomtom.sdk.map.display.compose.TomTomMap]，自管理生命周期，
+ * 不再需要 Activity 转发）。架构其余部分不变：算路 / 引导 / 定位编排经 NavServiceFactory，本 Activity
+ * 持有编排逻辑与状态，[MainScreen] 仅渲染并回调。
+ *
+ * 关键约束：Compose 地图需 SDK 已初始化（`TomTomSdk.sdkContext`）。本工程经 NavSdk 门面初始化
+ * （在线模式下转发原生 `TomTomSdk.initialize`），故地图基础设施在 `ensureOnlineServices()` 装配在线
+ * 服务（含 NavSdk 初始化）后才创建；就绪前 UI 显示加载态。
  */
 class MainActivity : ComponentActivity() {
 
@@ -64,17 +67,25 @@ class MainActivity : ComponentActivity() {
         SearchViewModel.factory(container.navServiceFactory, container.placesRepository)
     }
 
-    private lateinit var mapView: MapView
-    private var tomTomMap: TomTomMap? = null
-    private lateinit var locationProvider: LocationProvider
-    private lateinit var onLocationUpdateListener: OnLocationUpdateListener
+    private var appLocationProvider: LocationProvider? = null
+    private var onLocationUpdateListener: OnLocationUpdateListener? = null
     private var routingService: RoutingService? = null
     private var navEngine: NavigationEngine? = null
+    private var simulationProvider: LocationProvider? = null
     private var plannedRoutes: List<Route> = emptyList()
     private var routePlanningOptions: RoutePlanningOptions? = null
     private var pendingDestination: GeoPoint? = null
 
-    // —— Compose UI 状态（取代原 View 的可见性切换）——
+    // 路线可视化数据源（喂给 NavigationVisualization 绘制预览路线，取代命令式 map.addRoute）
+    private val routesFlow = MutableStateFlow<List<Route>>(emptyList())
+    private val selectedRouteIdFlow = MutableStateFlow<RouteId?>(null)
+
+    // —— Compose UI 状态 ——
+    private var mapInfra by mutableStateOf<MapDisplayInfrastructure?>(null)
+    private var navVizInfra by mutableStateOf<NavigationVisualizationInfrastructure?>(null)
+    private var initialCenter by mutableStateOf(DEFAULT_CENTER)
+    private var cameraTrackingMode by mutableStateOf<CameraTrackingMode>(CameraTrackingMode.None)
+    private var cameraTarget by mutableStateOf<CameraOptions?>(null)
     private var hasRoute by mutableStateOf(false)
     private var isNavigating by mutableStateOf(false)
     private var showRecenter by mutableStateOf(false)
@@ -82,16 +93,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 自定义 MapView（不使用 MapFragment）：程序化创建 + Activity 生命周期转发；交给 Compose 内嵌渲染
-        mapView = MapView(
-            this,
-            container.navServiceFactory.mapDisplay.mapOptions(initialCenter = DEFAULT_CENTER),
-        )
-        mapView.onCreate(savedInstanceState)
-        initMapAsync()
-
         observeServiceMode()
-        initLocation()
         ensureOnlineServices()
         observeGuidanceAnnouncements()
         requestLocationPermissionsIfNeeded()
@@ -100,7 +102,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             TomTomNavDemoTheme {
                 MainScreen(
-                    mapView = mapView,
+                    mapInfra = mapInfra,
+                    navVizInfra = navVizInfra,
+                    initialCenter = initialCenter,
+                    cameraTrackingMode = cameraTrackingMode,
+                    cameraTarget = cameraTarget,
                     serviceModeFlow = container.modeController.mode,
                     snapshotFlow = container.guidanceBus.snapshot,
                     resultsFlow = searchViewModel.results,
@@ -111,7 +117,7 @@ class MainActivity : ComponentActivity() {
                     onSearch = { query ->
                         searchViewModel.search(
                             query = query,
-                            bias = tomTomMap?.currentLocation?.position ?: DEFAULT_CENTER,
+                            bias = appLocationProvider?.lastKnownLocation?.position ?: DEFAULT_CENTER,
                         )
                     },
                     onResultClick = ::onResultClick,
@@ -124,6 +130,7 @@ class MainActivity : ComponentActivity() {
                     onRecenter = ::recenter,
                     onStopNav = ::stopNavigation,
                     onOpenSettings = { startActivity(Intent(this, SettingsActivity::class.java)) },
+                    onMapPanning = ::onMapPanning,
                 )
             }
         }
@@ -145,25 +152,14 @@ class MainActivity : ComponentActivity() {
         val lat = coords.getOrNull(0)?.toDoubleOrNull() ?: return
         val lon = coords.getOrNull(1)?.toDoubleOrNull() ?: return
         val destination = GeoPoint(lat, lon)
-        if (tomTomMap != null) {
-            tomTomMap?.clear()
-            planRouteTo(destination)
-        } else {
-            pendingDestination = destination
-        }
+        if (routingService != null) planRouteTo(destination) else pendingDestination = destination
     }
 
     // —— 服务装配（全部经 NavServiceFactory，架构关键规则）——
 
-    private fun initLocation() {
-        // 定位 Location 域；enable() 注册系统定位，必须等运行时权限到位（量产车机通常预授）
-        locationProvider = container.navServiceFactory.locationEngine.gps()
-        if (hasLocationPermissions()) locationProvider.enable()
-    }
-
     /**
-     * 在线服务装配（幂等）：首启时 AMS 鉴权是异步的，模式可能短暂为 OnboardOnly；
-     * 模式切到 OnlineFirst 时由 observeServiceMode 再次调用本方法补装 —— 即"模式驱动重建"。
+     * 在线服务装配（幂等）：首启 AMS 鉴权异步，模式可能短暂为 OnboardOnly；模式切到 OnlineFirst 时由
+     * observeServiceMode 再次调用补装。NavSdk 初始化后，构建 Compose 地图基础设施（需 sdkContext）。
      */
     private fun ensureOnlineServices() {
         if (navEngine != null) return
@@ -172,16 +168,45 @@ class MainActivity : ComponentActivity() {
         runCatching {
             // 路径规划 Routing 域
             routingService = factory.createRoutingService()
-            // 导航引导 Navigation 域（含 GuidanceBus 接线）
+            // 导航引导 Navigation 域（含 GuidanceBus 接线）—— 内部完成 NavSdk/TomTomSdk 初始化
             navEngine = factory.createNavigationEngine(container.telemetryManager, container.guidanceBus)
                 .also { engine ->
-                    engine.navigation.locationProvider = locationProvider
                     // 语音播报 TTS 域：引导语言
                     factory.tts.applyLanguage(engine.navigation, Locale.US)
                 }
+            // SDK 已就绪：定位 + Compose 地图基础设施
+            val provider = NavSdk.locationProvider
+            appLocationProvider = provider
+            if (hasLocationPermissions()) {
+                provider.enable()
+                provider.lastKnownLocation?.position?.let { initialCenter = it }
+                centerOnFirstFix(provider)
+            }
+            buildMapInfrastructure(provider)
+            pendingDestination?.let {
+                pendingDestination = null
+                planRouteTo(it)
+            }
         }.onFailure { e ->
             toast(e.message ?: getString(R.string.onboard_only_hint))
         }
+    }
+
+    /** 声明式地图所需的两套基础设施：地图显示（含定位源）+ 路线/导航可视化（预览路线 + 主动导航）。 */
+    private fun buildMapInfrastructure(provider: LocationProvider) {
+        mapInfra = MapDisplayInfrastructure(sdkContext = TomTomSdk.sdkContext) {
+            locationInfrastructure = MapLocationInfrastructure { locationProvider = provider }
+        }
+        navVizInfra = NavigationVisualizationInfrastructure(
+            // 预览：把算路结果喂给可视化即绘制（取代命令式 addRoute）
+            routingVisualizationDataProvider = flowOf(
+                RoutingVisualizationDataProvider(routes = routesFlow, selectedRouteId = selectedRouteIdFlow),
+            ),
+            // 主动导航：跟随 TomTomNavigation 进度绘制车标/主动路线
+            navigationVisualizationDataProvider = flowOf(
+                NavigationVisualizationDataProvider(tomtomNavigation = NavSdk.navigation),
+            ),
+        )
     }
 
     private fun observeServiceMode() {
@@ -210,59 +235,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // —— 地图显示 Map Display 域 ——
-
-    private fun initMapAsync() {
-        mapView.getMapAsync { map ->
-            tomTomMap = map
-            enableUserLocation()
-            // 默认隐藏路况流（用户偏好）；TrafficLayerService 仍保留，需要时再开
-            container.navServiceFactory.trafficLayers.setEnabled(map, false)
-            // 隐藏 MapView 自带的 UI 组件（指南针 / 定位 / 比例尺）——本工程用自绘控件，
-            // 仅保留必须的 TomTom logo。注意：这些组件属于 MapView（与 MapFragment 同源），非 MapFragment 专有。
-            mapView.compassButton.visibilityPolicy = CompassButton.VisibilityPolicy.Invisible
-            mapView.currentLocationButton.visibilityPolicy = VisibilityPolicy.Invisible
-            mapView.scaleView.isVisible = false
-            // 用户平移即解除相机跟随（可自由浏览），导航中显示自绘"回中"按钮
-            map.addMapPanningListener(mapPanningListener)
-            pendingDestination?.let {
-                pendingDestination = null
-                planRouteTo(it)
-            }
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        if (::mapView.isInitialized) mapView.onStart()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (::mapView.isInitialized) mapView.onResume()
-    }
-
-    override fun onPause() {
-        if (::mapView.isInitialized) mapView.onPause()
-        super.onPause()
-    }
-
-    override fun onStop() {
-        if (::mapView.isInitialized) mapView.onStop()
-        super.onStop()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        if (::mapView.isInitialized) mapView.onSaveInstanceState(outState)
-    }
-
     // —— 搜索 Search 域（UI 见 feature/search/SearchPanel）——
 
     private fun onResultClick(item: SearchViewModel.SearchItem) {
         searchViewModel.recordSelection(item)
         searchViewModel.clearResults()
-        tomTomMap?.clear()
         planRouteTo(item.position)
     }
 
@@ -275,7 +252,7 @@ class MainActivity : ComponentActivity() {
         }
         val prefs = container.settingsRepository.routePreferences.value
         routing.planRoutes(
-            origin = tomTomMap?.currentLocation?.position ?: DEFAULT_CENTER,
+            origin = appLocationProvider?.lastKnownLocation?.position ?: DEFAULT_CENTER,
             destination = destination,
             preferences = RoutePreferences(
                 avoidTolls = prefs.avoidTolls,
@@ -287,8 +264,10 @@ class MainActivity : ComponentActivity() {
             onResult = { routes, options ->
                 plannedRoutes = routes
                 routePlanningOptions = options
-                routes.forEachIndexed { index, route -> drawRoute(route, primary = index == 0) }
-                tomTomMap?.zoomToRoutes(ROUTE_PADDING_PX)
+                // 声明式绘制：更新数据源即由 NavigationVisualization 渲染
+                routesFlow.value = routes
+                selectedRouteIdFlow.value = routes.firstOrNull()?.id
+                cameraTrackingMode = CameraTrackingMode.RouteOverview
                 hasRoute = true
                 toast(getString(R.string.tap_route_to_navigate))
             },
@@ -296,35 +275,12 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun drawRoute(route: Route, primary: Boolean) {
-        val map = tomTomMap ?: return
-        val instructions = route.legs
-            .flatMap { it.instructions }
-            .map { Instruction(routeOffset = it.routeOffset) }
-        map.addRoute(
-            RouteOptions(
-                geometry = route.geometry,
-                destinationMarkerVisible = primary,
-                departureMarkerVisible = primary,
-                instructions = instructions,
-                routeOffset = route.routePoints.map { it.routeOffset },
-                color = if (primary) RouteOptions.DEFAULT_COLOR else Color.GRAY,
-                tag = route.id.toString(),
-            ),
-        )
-    }
-
     // —— 导航引导 Navigation 域 ——
 
     /** 平移地图即解除跟随（浏览），并显示统一的"回中"按钮（浏览/导航两态共用）。 */
-    private val mapPanningListener = object : MapPanningListener {
-        override fun onMapPanningStarted() {
-            tomTomMap?.cameraTrackingMode = CameraTrackingMode.None
-            showRecenter = true
-        }
-
-        override fun onMapPanningOngoing() = Unit
-        override fun onMapPanningEnded() = Unit
+    private fun onMapPanning() {
+        cameraTrackingMode = CameraTrackingMode.None
+        showRecenter = true
     }
 
     private fun startNavigation(route: Route) {
@@ -333,65 +289,56 @@ class MainActivity : ComponentActivity() {
         // 引导数据分发（仪表/Widget/ISA/自绘面板）先接通，再启动引擎
         engine.onNavigationStarted()
         engine.navigation.start(NavigationOptions(RoutePlan(route, options)))
-        // 跟随视角 + 车标（Chevron）+ 底部留白，给引导面板让位
-        tomTomMap?.apply {
-            cameraTrackingMode = CameraTrackingMode.FollowRouteDirection
-            enableLocationMarker(LocationMarkerOptions(LocationMarkerOptions.Type.Chevron))
-            setPadding(Padding(0, 0, 0, resources.getDimensionPixelOffset(R.dimen.map_padding_bottom)))
-        }
-        // Demo 模拟行驶（实车联调删除，直接消费 GPS/融合定位）
-        useSimulationLocationProvider(route)
+        // Demo 模拟行驶（实车联调删除，直接消费 GPS/融合定位）：
+        // 相机 FollowRouteDirection 与 NavigationVisualization 跟随导航引擎进度，故只需切换导航定位源
+        val sim = container.navServiceFactory.locationEngine.simulation(route)
+        simulationProvider = sim
+        engine.navigation.locationProvider = sim
+        sim.enable()
+        cameraTrackingMode = CameraTrackingMode.FollowRouteDirection
         // location 型前台 Service 在 API 34+ 同样要求定位权限；拒绝授权时跳过（仅失去后台保活）
         if (hasLocationPermissions()) NavigationForegroundService.start(this)
-        // 导航期间隐藏浏览态 chrome（模式横幅 / 搜索框 / 设置 / 发车按钮），由 Compose 据状态切换
         isNavigating = true
         hasRoute = false
         showRecenter = false
     }
 
-    /** Demo 用模拟行驶（定位 Location 域）；实车联调时删除，导航直接消费 GPS/融合定位。 */
-    private fun useSimulationLocationProvider(route: Route) {
-        val engine = navEngine ?: return
-        val old = engine.navigation.locationProvider
-        locationProvider = container.navServiceFactory.locationEngine.simulation(route)
-        engine.navigation.locationProvider = locationProvider
-        tomTomMap?.setLocationProvider(locationProvider)
-        old.close()
-        locationProvider.enable()
-    }
-
     private fun stopNavigation() {
-        navEngine?.navigation?.stop()
-        navEngine?.onNavigationStopped()
+        val engine = navEngine
+        engine?.navigation?.stop()
+        engine?.onNavigationStopped()
         NavigationForegroundService.stop(this)
-        tomTomMap?.apply {
-            cameraTrackingMode = CameraTrackingMode.None
-            enableLocationMarker(LocationMarkerOptions(LocationMarkerOptions.Type.Pointer))
-            setPadding(Padding(0, 0, 0, 0))
-            clear()
-        }
+        // 还原导航定位源为默认 GPS，关闭模拟
+        appLocationProvider?.let { engine?.navigation?.locationProvider = it }
+        simulationProvider?.close()
+        simulationProvider = null
+        // 清空预览路线
+        routesFlow.value = emptyList()
+        selectedRouteIdFlow.value = null
+        plannedRoutes = emptyList()
         isNavigating = false
         hasRoute = false
         showRecenter = false
-        plannedRoutes = emptyList()
-        locationProvider = container.navServiceFactory.locationEngine.gps()
-        if (hasLocationPermissions()) locationProvider.enable()
-        navEngine?.navigation?.locationProvider = locationProvider
-        enableUserLocation()
+        cameraTrackingMode = CameraTrackingMode.None
+        appLocationProvider?.lastKnownLocation?.position?.let {
+            cameraTarget = CameraOptions(position = it, zoom = DEFAULT_ZOOM)
+        }
     }
 
     /** 统一回中：导航中恢复跟路视角；非导航时把相机移回当前位置。 */
     private fun recenter() {
-        val map = tomTomMap ?: return
         if (isNavigating) {
-            map.cameraTrackingMode = CameraTrackingMode.FollowRouteDirection
+            cameraTrackingMode = CameraTrackingMode.FollowRouteDirection
         } else {
-            map.currentLocation?.position?.let { map.animateCamera(CameraOptions(it, zoom = DEFAULT_ZOOM)) }
+            cameraTrackingMode = CameraTrackingMode.None
+            appLocationProvider?.lastKnownLocation?.position?.let {
+                cameraTarget = CameraOptions(position = it, zoom = DEFAULT_ZOOM)
+            }
         }
         showRecenter = false
     }
 
-    // —— 权限 ——
+    // —— 权限 / 定位 ——
 
     /** 启动即发起授权（首装路径）；地图就绪与授权完成的先后顺序均已覆盖。 */
     private fun requestLocationPermissionsIfNeeded() {
@@ -406,23 +353,19 @@ class MainActivity : ComponentActivity() {
         locationPermissionRequest.launch(permissions.toTypedArray())
     }
 
-    private fun enableUserLocation() {
-        if (hasLocationPermissions()) showUserLocation()
-    }
-
-    private fun showUserLocation() {
-        val map = tomTomMap ?: return
-        // 避免重复注册：定位到来前若多次调用（授权回调 / 结束导航后回中），先移除上一个一次性监听
-        if (::onLocationUpdateListener.isInitialized) {
-            locationProvider.removeOnLocationUpdateListener(onLocationUpdateListener)
+    /** 首个定位到来时把相机移到当前位置（一次性）。 */
+    private fun centerOnFirstFix(provider: LocationProvider) {
+        onLocationUpdateListener?.let { provider.removeOnLocationUpdateListener(it) }
+        val listener = object : OnLocationUpdateListener {
+            override fun onLocationUpdate(location: com.tomtom.sdk.location.GeoLocation) {
+                if (!isNavigating && !showRecenter) {
+                    cameraTarget = CameraOptions(position = location.position, zoom = DEFAULT_ZOOM)
+                }
+                provider.removeOnLocationUpdateListener(this)
+            }
         }
-        onLocationUpdateListener = OnLocationUpdateListener { location ->
-            map.moveCamera(CameraOptions(location.position, zoom = DEFAULT_ZOOM))
-            locationProvider.removeOnLocationUpdateListener(onLocationUpdateListener)
-        }
-        locationProvider.addOnLocationUpdateListener(onLocationUpdateListener)
-        map.setLocationProvider(locationProvider)
-        map.enableLocationMarker(LocationMarkerOptions(type = LocationMarkerOptions.Type.Pointer))
+        onLocationUpdateListener = listener
+        provider.addOnLocationUpdateListener(listener)
     }
 
     private val locationPermissionRequest = registerForActivityResult(
@@ -431,8 +374,10 @@ class MainActivity : ComponentActivity() {
         if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         ) {
-            locationProvider.enable()
-            showUserLocation()
+            appLocationProvider?.let { provider ->
+                provider.enable()
+                centerOnFirstFix(provider)
+            }
         } else {
             toast(getString(R.string.location_permission_denied))
         }
@@ -451,20 +396,17 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        tomTomMap?.removeMapPanningListener(mapPanningListener)
-        tomTomMap?.setLocationProvider(null)
+        onLocationUpdateListener?.let { appLocationProvider?.removeOnLocationUpdateListener(it) }
         container.navServiceFactory.tts.shutdown()
+        simulationProvider?.close()
         navEngine?.close()
-        locationProvider.close()
-        if (::mapView.isInitialized) mapView.onDestroy()
         super.onDestroy()
     }
 
     private companion object {
         /** 演示用初始位置（悉尼）。 */
         val DEFAULT_CENTER = GeoPoint(-33.8688, 151.2093)
-        const val DEFAULT_ZOOM = 12.0
-        const val ROUTE_PADDING_PX = 100
+        const val DEFAULT_ZOOM = 14.0
 
         /** 仅规划主路线（不出备选）。 */
         const val MAX_ALTERNATIVES = 0

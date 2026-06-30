@@ -43,4 +43,5 @@
     <string name="nav_arrived">已到达目的地</string>
     <string name="nav_speed_unit">km/h</string>
     <string name="nav_dest">目的地</string>
+    <string name="map_initializing">地图初始化中…</string>
 </resources>
