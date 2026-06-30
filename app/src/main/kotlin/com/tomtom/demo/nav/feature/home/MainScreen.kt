@@ -48,8 +48,10 @@ import com.tomtom.sdk.map.display.camera.InitialCameraOptions
 import com.tomtom.sdk.map.display.compose.TomTomMap
 import com.tomtom.sdk.map.display.compose.model.MapDisplayInfrastructure
 import com.tomtom.sdk.map.display.compose.nodes.CurrentLocationMarker
+import com.tomtom.sdk.map.display.compose.nodes.Traffic
 import com.tomtom.sdk.map.display.compose.properties.CurrentLocationMarkerProperties
 import com.tomtom.sdk.map.display.compose.state.rememberMapViewState
+import com.tomtom.sdk.map.display.compose.state.rememberTrafficState
 import com.tomtom.sdk.map.display.location.LocationMarkerOptions
 import com.tomtom.sdk.map.display.visualization.navigation.annotations.BetaHorizonVisualizationApi
 import com.tomtom.sdk.map.display.visualization.navigation.compose.BetterRouteVisualization
@@ -241,6 +243,8 @@ private fun MapHost(
         CurrentLocationMarker(
             CurrentLocationMarkerProperties { type = LocationMarkerOptions.Type.Chevron },
         )
+        // 全图路况：道路流量着色（绿/黄/红）+ 事件图标（事故 / 施工 / 封路）
+        Traffic(state = rememberTrafficState(showTrafficFlow = true, showTrafficIncidents = true))
         // 预览路线（路由数据源）+ 主动导航（导航数据源）+ 沿途要素，统一由 NavigationVisualization 渲染
         NavigationVisualization(infrastructure = navVizInfra) {
             // 路况事件：在路线上着色拥堵/事故段
