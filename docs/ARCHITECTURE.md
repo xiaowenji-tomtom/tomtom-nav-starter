@@ -2,7 +2,8 @@
 
 面向**首次打开本工程**的同学：一页看懂工程结构与整体架构。
 
-本工程是基于 **TomTom NavSDK 2.3.1**（View/XML 体系，非 Compose）的车机导航 Demo 起步工程，
+本工程是基于 **TomTom NavSDK 2.3.1** 的车机导航 Demo 起步工程，UI 采用 **Jetpack Compose**
+（地图仍是命令式 `MapView`，经 `AndroidView` 内嵌、生命周期由宿主 Activity 转发——SDK 调用方式不变），
 按依赖方向自上而下分为四个 Gradle 模块 + 外部 SDK。核心思想：**UI 不直接持有 SDK 句柄，
 一律经 `NavServiceFactory` 获取能力服务；授权状态变化时由 `ServiceModeController` 切换运行模式，
 调用方重建服务，业务代码零感知。**
@@ -19,7 +20,7 @@
 
 | 模块 | 角色 | 关键内容 |
 |---|---|---|
-| `:app` | UI / feature 层（View 体系） | [`App`](../app/src/main/kotlin/com/tomtom/demo/nav/App.kt) 内 `AppContainer` 手工 DI；按 feature 分包：home / search / settings / onboarding / guidance / widget |
+| `:app` | UI / feature 层（Jetpack Compose） | [`App`](../app/src/main/kotlin/com/tomtom/demo/nav/App.kt) 内 `AppContainer` 手工 DI；按 feature 分包：home / search / settings / onboarding / guidance / widget；`MainActivity` 持有 `MapView` 与编排逻辑，Compose 仅渲染状态并回调 |
 | `:core:sdk` | 能力 + 架构核心 | 鉴权、运行模式、`NavServiceFactory`、九大能力域、`GuidanceBus` |
 | `:core:platform` | 主机 / 整车集成点（待实现） | VIN、CAN、车辆信号、仪表通道——均为 `interface` + `Stub*` 占位实现 |
 | `:core:data` | 本地存储 | 收藏 / 历史（TomTom Personal Data 模块）、偏好设置 |
