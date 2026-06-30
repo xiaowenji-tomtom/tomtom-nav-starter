@@ -51,8 +51,14 @@ import com.tomtom.sdk.map.display.compose.nodes.CurrentLocationMarker
 import com.tomtom.sdk.map.display.compose.properties.CurrentLocationMarkerProperties
 import com.tomtom.sdk.map.display.compose.state.rememberMapViewState
 import com.tomtom.sdk.map.display.location.LocationMarkerOptions
+import com.tomtom.sdk.map.display.visualization.navigation.annotations.BetaHorizonVisualizationApi
+import com.tomtom.sdk.map.display.visualization.navigation.compose.BetterRouteVisualization
+import com.tomtom.sdk.map.display.visualization.navigation.compose.HorizonVisualization
 import com.tomtom.sdk.map.display.visualization.navigation.compose.NavigationVisualization
 import com.tomtom.sdk.map.display.visualization.navigation.compose.model.NavigationVisualizationInfrastructure
+import com.tomtom.sdk.map.display.visualization.navigation.compose.state.rememberBetterRouteVisualizationState
+import com.tomtom.sdk.map.display.visualization.routing.compose.TrafficVisualization
+import com.tomtom.sdk.map.display.visualization.routing.compose.state.rememberTrafficVisualizationState
 import kotlinx.coroutines.flow.StateFlow
 
 private typealias SearchItem = SearchViewModel.SearchItem
@@ -203,6 +209,7 @@ fun MainScreen(
     }
 }
 
+@OptIn(BetaHorizonVisualizationApi::class)
 @Composable
 private fun MapHost(
     mapInfra: MapDisplayInfrastructure,
@@ -234,8 +241,15 @@ private fun MapHost(
         CurrentLocationMarker(
             CurrentLocationMarkerProperties { type = LocationMarkerOptions.Type.Chevron },
         )
-        // 预览路线（路由数据源）+ 主动导航（导航数据源）统一由此渲染
-        NavigationVisualization(infrastructure = navVizInfra) { }
+        // 预览路线（路由数据源）+ 主动导航（导航数据源）+ 沿途要素，统一由 NavigationVisualization 渲染
+        NavigationVisualization(infrastructure = navVizInfra) {
+            // 路况事件：在路线上着色拥堵/事故段
+            TrafficVisualization(state = rememberTrafficVisualizationState(trafficIncidentsEnabled = true))
+            // 更优路线提示（行程中出现更快路线时高亮）
+            BetterRouteVisualization(state = rememberBetterRouteVisualizationState(enabled = true))
+            // 沿途 Horizon 要素（默认全开）：危险预警 / 安全提醒点（测速等）/ 交通标志 / 红绿灯 / 铁道口
+            HorizonVisualization()
+        }
     }
 }
 
