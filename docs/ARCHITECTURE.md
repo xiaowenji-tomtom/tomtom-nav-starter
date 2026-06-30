@@ -75,3 +75,5 @@
 - **平台适配层隔离**：所有主机 / 整车耦合点收敛在 `:core:platform` 的接口里（WS5 替换为真实实现）。
 - **引导数据契约**：多屏消费端只依赖 `GuidanceSnapshot`，通道实现可独立演进。
 - **后台保活**：导航期间由 `NavigationForegroundService`（`foregroundServiceType=location`）保活进程并持续后台定位 / ISA 转发 —— 取代了 SDK `NavigationFragment(keepInBackground=true)` 内部的 `TomTomNavigationService`（自绘 UI 后该机制不再可用）。
+- **地图就绪门控**：声明式 `TomTomMap` 需 `TomTomSdk.sdkContext`，故地图基础设施在 NavSdk 初始化后才创建，就绪前 UI 显示加载态（与命令式 `MapView` 经 apiKey 独立初始化不同）。
+- **地图归属（logo）**：当前 SDK（2.3.1）的声明式 `TomTomMap` 会强制隐藏内置 `LogoView` 且未提供重新开启的 Compose API（官方示例 App 同此行为）。如许可要求展示 TomTom 归属，待 SDK 暴露 Logo 可组合项后再补；命令式 `MapView` 则默认显示 logo。

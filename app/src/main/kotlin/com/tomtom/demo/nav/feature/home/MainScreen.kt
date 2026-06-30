@@ -217,8 +217,10 @@ private fun MapHost(
         initialCameraOptions = InitialCameraOptions.LocationBased(position = initialCenter, zoom = INITIAL_ZOOM),
     )
 
-    // 导航态给底部引导面板留白，避免车标被遮挡（等价于命令式 map.setPadding）
-    mapViewState.safeArea = PaddingValues(bottom = if (isNavigating) NAV_BOTTOM_SAFE_AREA.dp else 0.dp)
+    // 导航态给底部引导面板留白，避免车标被遮挡（等价于命令式 map.setPadding）；仅在状态变化时更新
+    LaunchedEffect(isNavigating) {
+        mapViewState.safeArea = PaddingValues(bottom = if (isNavigating) NAV_BOTTOM_SAFE_AREA.dp else 0.dp)
+    }
 
     LaunchedEffect(cameraTrackingMode) { mapViewState.cameraState.trackingMode = cameraTrackingMode }
     LaunchedEffect(cameraTarget) { cameraTarget?.let { mapViewState.cameraState.animateCamera(it) } }

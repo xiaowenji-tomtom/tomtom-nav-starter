@@ -400,6 +400,8 @@ class MainActivity : ComponentActivity() {
         container.navServiceFactory.tts.shutdown()
         simulationProvider?.close()
         navEngine?.close()
+        // 与 enable() 配平：销毁时停用定位，避免 GPS/传感器后台空转耗电
+        appLocationProvider?.disable()
         super.onDestroy()
     }
 
