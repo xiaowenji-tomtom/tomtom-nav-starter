@@ -59,7 +59,10 @@ import com.tomtom.sdk.map.display.visualization.navigation.compose.HorizonVisual
 import com.tomtom.sdk.map.display.visualization.navigation.compose.NavigationVisualization
 import com.tomtom.sdk.map.display.visualization.navigation.compose.model.NavigationVisualizationInfrastructure
 import com.tomtom.sdk.map.display.visualization.navigation.compose.state.rememberBetterRouteVisualizationState
+import com.tomtom.sdk.map.display.visualization.routing.compose.RoutingVisualization
 import com.tomtom.sdk.map.display.visualization.routing.compose.TrafficVisualization
+import com.tomtom.sdk.map.display.visualization.routing.compose.model.RoutingVisualizationInfrastructure
+import com.tomtom.sdk.map.display.visualization.routing.compose.state.rememberRoutingVisualizationState
 import com.tomtom.sdk.map.display.visualization.routing.compose.state.rememberTrafficVisualizationState
 import kotlinx.coroutines.flow.StateFlow
 
@@ -76,6 +79,7 @@ private typealias SearchItem = SearchViewModel.SearchItem
 fun MainScreen(
     mapInfra: MapDisplayInfrastructure?,
     navVizInfra: NavigationVisualizationInfrastructure?,
+    routingVizInfra: RoutingVisualizationInfrastructure?,
     initialCenter: GeoPoint,
     cameraTrackingMode: CameraTrackingMode,
     cameraTarget: CameraOptions?,
@@ -97,10 +101,11 @@ fun MainScreen(
     onMapPanning: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        if (mapInfra != null && navVizInfra != null) {
+        if (mapInfra != null && navVizInfra != null && routingVizInfra != null) {
             MapHost(
                 mapInfra = mapInfra,
                 navVizInfra = navVizInfra,
+                routingVizInfra = routingVizInfra,
                 initialCenter = initialCenter,
                 cameraTrackingMode = cameraTrackingMode,
                 cameraTarget = cameraTarget,
@@ -216,6 +221,7 @@ fun MainScreen(
 private fun MapHost(
     mapInfra: MapDisplayInfrastructure,
     navVizInfra: NavigationVisualizationInfrastructure,
+    routingVizInfra: RoutingVisualizationInfrastructure,
     initialCenter: GeoPoint,
     cameraTrackingMode: CameraTrackingMode,
     cameraTarget: CameraOptions?,
@@ -245,14 +251,25 @@ private fun MapHost(
         )
         // 全图路况：道路流量着色（绿/黄/红）+ 事件图标（事故 / 施工 / 封路）
         Traffic(state = rememberTrafficState(showTrafficFlow = true, showTrafficIncidents = true))
-        // 预览路线（路由数据源）+ 主动导航（导航数据源）+ 沿途要素，统一由 NavigationVisualization 渲染
-        NavigationVisualization(infrastructure = navVizInfra) {
-            // 路况事件：在路线上着色拥堵/事故段
-            TrafficVisualization(state = rememberTrafficVisualizationState(trafficIncidentsEnabled = true))
-            // 更优路线提示（行程中出现更快路线时高亮）
-            BetterRouteVisualization(state = rememberBetterRouteVisualizationState(enabled = true))
-            // 沿途 Horizon 要素（默认全开）：危险预警 / 安全提醒点（测速等）/ 交通标志 / 红绿灯 / 铁道口
-            HorizonVisualization()
+
+        // 路线 + 沿途要素：预览态与导航态互斥，避免同一路线被两套可视化重复绘制
+        if (isNavigating) {
+            // 主动导航：跟随引擎绘制主动路线/车标 + 路况 + 更优路线 + Horizon 要素
+            NavigationVisualization(infrastructure = navVizInfra) {
+                TrafficVisualization(state = rememberTrafficVisualizationState())
+                BetterRouteVisualization(state = rememberBetterRouteVisualizationState(enabled = true))
+                // 沿途 Horizon 要素（默认全开）：危险预警 / 安全提醒点（测速等）/ 交通标志 / 红绿灯 / 铁道口
+                HorizonVisualization()
+            }
+        } else {
+            // 路线预览（官方文档：RoutingVisualization 承载 TrafficVisualization 绘制路线与路况事件）
+            RoutingVisualization(
+                infrastructure = routingVizInfra,
+                state = rememberRoutingVisualizationState(zoomToRoutesEnabled = false),
+            ) {
+                // 路况事件在路线上着色（默认开启）
+                TrafficVisualization(state = rememberTrafficVisualizationState())
+            }
         }
     }
 }

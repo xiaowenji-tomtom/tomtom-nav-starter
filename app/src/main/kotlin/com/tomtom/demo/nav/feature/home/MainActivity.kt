@@ -39,6 +39,7 @@ import com.tomtom.sdk.map.display.compose.model.MapDisplayInfrastructure
 import com.tomtom.sdk.map.display.visualization.navigation.NavigationVisualizationDataProvider
 import com.tomtom.sdk.map.display.visualization.navigation.compose.model.NavigationVisualizationInfrastructure
 import com.tomtom.sdk.map.display.visualization.routing.RoutingVisualizationDataProvider
+import com.tomtom.sdk.map.display.visualization.routing.compose.model.RoutingVisualizationInfrastructure
 import com.tomtom.sdk.navigation.NavigationOptions
 import com.tomtom.sdk.navigation.RoutePlan
 import com.tomtom.sdk.routing.options.RoutePlanningOptions
@@ -83,6 +84,7 @@ class MainActivity : ComponentActivity() {
     // —— Compose UI 状态 ——
     private var mapInfra by mutableStateOf<MapDisplayInfrastructure?>(null)
     private var navVizInfra by mutableStateOf<NavigationVisualizationInfrastructure?>(null)
+    private var routingVizInfra by mutableStateOf<RoutingVisualizationInfrastructure?>(null)
     private var initialCenter by mutableStateOf(DEFAULT_CENTER)
     private var cameraTrackingMode by mutableStateOf<CameraTrackingMode>(CameraTrackingMode.None)
     private var cameraTarget by mutableStateOf<CameraOptions?>(null)
@@ -104,6 +106,7 @@ class MainActivity : ComponentActivity() {
                 MainScreen(
                     mapInfra = mapInfra,
                     navVizInfra = navVizInfra,
+                    routingVizInfra = routingVizInfra,
                     initialCenter = initialCenter,
                     cameraTrackingMode = cameraTrackingMode,
                     cameraTarget = cameraTarget,
@@ -192,17 +195,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** 声明式地图所需的两套基础设施：地图显示（含定位源）+ 路线/导航可视化（预览路线 + 主动导航）。 */
+    /** 声明式地图所需的基础设施：地图显示（含定位源）+ 路线可视化（预览）+ 导航可视化（主动导航）。 */
     private fun buildMapInfrastructure(provider: LocationProvider) {
         mapInfra = MapDisplayInfrastructure(sdkContext = TomTomSdk.sdkContext) {
             locationInfrastructure = MapLocationInfrastructure { locationProvider = provider }
         }
-        navVizInfra = NavigationVisualizationInfrastructure(
-            // 预览：把算路结果喂给可视化即绘制（取代命令式 addRoute）
+        // 路线预览（按官方文档 RoutingVisualization + TrafficVisualization 绘制路线与路况）
+        routingVizInfra = RoutingVisualizationInfrastructure(
             routingVisualizationDataProvider = flowOf(
                 RoutingVisualizationDataProvider(routes = routesFlow, selectedRouteId = selectedRouteIdFlow),
             ),
-            // 主动导航：跟随 TomTomNavigation 进度绘制车标/主动路线
+        )
+        // 主动导航：跟随 TomTomNavigation 进度绘制主动路线/车标 + 沿途 Horizon 要素
+        navVizInfra = NavigationVisualizationInfrastructure(
+            routingVisualizationDataProvider = flowOf(
+                RoutingVisualizationDataProvider(routes = routesFlow, selectedRouteId = selectedRouteIdFlow),
+            ),
             navigationVisualizationDataProvider = flowOf(
                 NavigationVisualizationDataProvider(tomtomNavigation = NavSdk.navigation),
             ),

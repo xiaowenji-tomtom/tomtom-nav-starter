@@ -3,10 +3,11 @@
 面向**首次打开本工程**的同学：一页看懂工程结构与整体架构。
 
 本工程是基于 **TomTom NavSDK 2.3.1** 的车机导航 Demo 起步工程，UI 采用 **Jetpack Compose**，
-地图为 TomTom 声明式 Compose 地图（`com.tomtom.sdk.map.display.compose.TomTomMap`，自管理生命周期；
-路线预览与主动导航经 `NavigationVisualization` 数据源声明式绘制，并叠加沿途图层——
-路况着色 `TrafficVisualization`、更优路线 `BetterRouteVisualization`、Horizon 要素 `HorizonVisualization`
-（危险预警 / 安全提醒点 / 交通标志 / 红绿灯 / 铁道口，由导航引擎电子地平线自动生成）），
+地图为 TomTom 声明式 Compose 地图（`com.tomtom.sdk.map.display.compose.TomTomMap`，自管理生命周期）。
+路线路况按官方文档以 `RoutingVisualization` + `TrafficVisualization` 绘制（预览态）；进入导航后改用
+`NavigationVisualization` 绘制主动路线并叠加 `TrafficVisualization` / `BetterRouteVisualization` /
+`HorizonVisualization`（危险预警 / 安全提醒点 / 交通标志 / 红绿灯 / 铁道口，电子地平线自动生成）——
+两者互斥以免同一路线被重复绘制；另有全图 `Traffic` 图层显示道路流量与事件），
 按依赖方向自上而下分为四个 Gradle 模块 + 外部 SDK。核心思想：**UI 不直接持有 SDK 句柄，
 一律经 `NavServiceFactory` 获取能力服务；授权状态变化时由 `ServiceModeController` 切换运行模式，
 调用方重建服务，业务代码零感知。**
